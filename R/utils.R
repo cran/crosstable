@@ -37,7 +37,7 @@ tryCatch2 = function(expr){
     attr(rtn, "warnings") = unique(map_chr(warnings, conditionMessage))
     attr(rtn, "messages") = unique(map_chr(messages, conditionMessage))
     
-    x=c(errors, warnings, messages)
+    x = c(errors, warnings, messages) %>% unique()
     attr(rtn, "overview") = tibble(
         type=map_chr(x, ~ifelse(inherits(.x, "error"), "Error", 
                                 ifelse(inherits(.x, "warning"), "Warning", "Message"))),
@@ -52,6 +52,44 @@ tryCatch2 = function(expr){
 #' @noRd
 condition_overview = function(expr){
     tryCatch2(expr) %>% attr("overview")
+}
+
+
+
+#' @keywords internal
+#' @noRd
+#' @examples
+#' f = function(){
+#'   rlang::warn("This is a warning", class="dummy_warning")
+#'   rlang::warn("This is a warning too", class="also_dummy_warning")
+#'   99
+#' }
+#' x = f() %>% print_warning_class()
+#' x
+print_warning_class = function(expr){
+    withCallingHandlers( 
+        tryCatch(expr), 
+        warning = function(w) {
+            warning(gettext(w), immediate.=TRUE)
+            print(class(w))
+            invokeRestart("muffleWarning")
+        }
+    )
+}
+
+
+#' @importFrom glue glue
+#' @importFrom rlang abort
+#' @importFrom stringr str_ends
+#' @keywords internal
+#' @noRd
+assert_is_installed = function(pkg, fun) {
+    if(!str_ends(fun, "()")) fun=paste0(fun, "()")
+    if(!requireNamespace(pkg, quietly=TRUE)) {
+        abort(glue('Package "{pkg}" is needed for function {fun} to work. Please install it.'),
+              class="missing_package_error") # nocov
+    }
+    invisible(pkg)
 }
 
 
@@ -74,28 +112,48 @@ get_defined_function = function(name) {
     funs = funs[! vapply(envs, identical, logical(1L), topenv())]
     if(length(funs)>1) warn("There are multiple '", name,"' functions loaded. If this causes any trouble, fill an issue on crosstable's github page.") # nocov
     unlist(funs[1L])
-    # unlist(funs[[1L]])
 }
 
 
 
-#' @keywords internal
 #' @importFrom rlang as_function is_formula caller_env warn abort
 #' @importFrom purrr map map_dbl pmap_chr
 #' @importFrom glue glue glue_collapse
 #' @importFrom stringr str_subset
+#' @keywords internal
 #' @noRd
 parse_funs = function(funs){
+    # browser()
+    # fun_quo=enquo(funs)
     funs = c(funs)
     if(is.null(names(funs))) names(funs)=NA
+    caller = caller_env()
+    
+    #TODO if(!is.list(funs) funs=list(funs))
+    
+    # fun_call = as.character(as.list(substitute(funs)))
+    # fun_call = fun_call[fun_call != "c" & fun_call != "list"]
+    # fun_call2 = as.character(as.list(substitute(funs, caller_env())))
+    # fun_call2 = fun_call[fun_call != "c" & fun_call != "list"]
+    
     if(length(funs)>1) {
         fun_call = as.character(as.list(substitute(funs, caller_env())))
         fun_call = fun_call[fun_call != "c" & fun_call != "list"]
     } else {
         fun_call = deparse(substitute(funs, caller_env()))
     }
-    
+    # print(fun_call)
+    # print(deparse(substitute(funs, caller_env())))
+    # print(deparse(substitute(funs)))
+    # print(deparse(substitute(list(funs), caller_env())))
+    # browser()
+    if(length(fun_call)!=length(funs)){
+        fun_call = as.character(as.list(substitute(funs, caller_env())))
+        fun_call = fun_call[fun_call != "c" & fun_call != "list"]
+        # x=list(funs, names(funs), fun_call) 
+    }
     x=list(funs, names(funs), fun_call) 
+    
     if(map_dbl(x, length) %>% .[.>0] %>% unique() %>% length() != 1){
         abort(c("Problem with fun_call. This should never happen. Is `funs` syntax correct?", 
                 i=glue("lengths: funs={length(funs)}, names(funs)={length(names(funs))}, fun_call={length(fun_call)}"))) #nocov
@@ -180,6 +238,16 @@ paste_classes = function(x){
     paste(class(remove_labels(x)), collapse=", ")
 }
 
+#' paste all names and first classes (minus "labelled")
+#'
+#' @param x a dataframe
+#' @keywords internal
+#' @noRd
+paste_nameclasses = function(x){
+    glue("{name} ({class})", name=names(x), 
+         class=map_chr(x, ~class(remove_label(.x))[1]))
+}
+
 
 # Misc --------------------------------------------------------------------
 
@@ -228,6 +296,7 @@ sd_date = function(x, date_unit=c("auto", "seconds", "minutes", "hours", "days",
 #'
 #' @return the vector \[conf_inf, conf_sup\]
 #'
+#' @author Dan Chaltiel
 #' @export
 #'
 #' @examples
@@ -251,23 +320,6 @@ confint_numeric = function(object, level=0.95, B=0){
     names(rtn) = paste(nm, "%")
     rtn
 }
-
-# x = iris$Sepal.Length
-# x[5:20]=NA
-# confint_numeric(x) - confint_numeric(x, B=10)
-# confint_numeric(x) - confint_numeric(x, B=100)
-# confint_numeric(x) - confint_numeric(x, B=1000)
-# confint_numeric(x) - confint_numeric(x, B=10000)
-# x = rnorm(1500, mean = 0, sd = 1)
-# confint_numeric(x) - confint_numeric(x, B=10)
-# confint_numeric(x) - confint_numeric(x, B=100)
-# confint_numeric(x) - confint_numeric(x, B=1000)
-# confint_numeric(x) - confint_numeric(x, B=10000)
-# t.test(x)$conf.int
-
-
-
-
 
 
 #' Return the number of non NA observations
@@ -299,6 +351,7 @@ na = function(x) {
 #' @return A character vector of re-wrapped strings
 #'
 #' @keywords internal
+#' @noRd
 #' @importFrom stringr str_detect str_wrap str_replace_all
 #'
 #' @examples

@@ -1,5 +1,5 @@
 
-#' @importFrom purrr imap_dfr map_dfr
+#' @importFrom purrr imap_dfr map_dfr imap_chr
 #' @importFrom survival is.Surv
 #' @importFrom glue glue glue_data glue_collapse
 #' @keywords internal
@@ -7,7 +7,18 @@
 cross_by = function(data_x, data_y, funs, funs_arg, margin, total, percent_digits, 
                     showNA, label, test, times, followup, 
                     test_args, cor_method, effect, effect_args){
+    if(!is.null(data_y) && ncol(data_y)>1) abort(glue("data_y has {ncol(data_y)} columns (max=1)"))
     errors = rlang::env()
+    
+    by_levels = length(unique(na.omit(data_y[[1]])))
+    if(!is.numeric(data_y[[1]]) && isTRUE(effect) && by_levels!=2){
+        info_by = NULL
+        if(!is.null(data_y)) info_by = c()
+        warn(c(glue("Cannot calculate crosstable effects as there is not exactly 2 groups in `by`."),
+               i=glue("`by` has {by_levels} levels")),
+             class = "crosstable_effect_2groups_warning")
+        effect = FALSE
+    }
     
     rtn_tbl = imap_dfr(data_x, ~{
         if(all(is.na(.x))) .x = "NA"
@@ -17,8 +28,8 @@ cross_by = function(data_x, data_y, funs, funs_arg, margin, total, percent_digit
             na_proper = glue_collapse(which(is.na(.x)), ", ", last = ", and ")
             s2 = if(sum(is.na(.x))>1) "s" else ""
             warn(c(glue('Cannot describe column "{.y}" as it contains both `NA` (missing values) and "NA" (string)'),
-                  i=glue('NA as strings on row{s1} {na_string}'),
-                  i=glue('NA missing value on row{s2} {na_proper}')),
+                   i=glue('NA as strings on row{s1} {na_string}'),
+                   i=glue('NA missing value on row{s2} {na_proper}')),
                  class = "crosstable_na_char_warning")
             errors[[.y]] = data.frame(name=.y, class="Both `NA` and 'NA'")
             return(NULL)
@@ -33,7 +44,7 @@ cross_by = function(data_x, data_y, funs, funs_arg, margin, total, percent_digit
             errors[[.y]] = data.frame(name=.y, class="list")
             return(NULL)
         }
-           
+        
         if(is.list(.x)){
             errors[[.y]] = data.frame(name=.y, class="list")
             return(NULL)
@@ -63,6 +74,7 @@ cross_by = function(data_x, data_y, funs, funs_arg, margin, total, percent_digit
         rtn
     })
     
+    
     errors = as.list(errors) %>% map_dfr(identity)
     if(nrow(errors)>0){
         s=if(nrow(errors)>1) "s" else ""
@@ -78,13 +90,64 @@ cross_by = function(data_x, data_y, funs, funs_arg, margin, total, percent_digit
     }
     
     if("effect" %in% names(rtn_tbl) && any(rtn_tbl$effect=="No effect?")){
-        x=rtn_tbl %>% filter(effect=="No effect?") %>% pull(.data$.id) %>% unique
+        x=rtn_tbl %>% filter(effect=="No effect?") %>% pull(.data$.id) %>% unique()
+        # x=rtn_tbl %>% .[.$effect=="No effect?", ".id"] %>% unique()
+        # browser()
+        # x=rtn_tbl %>% filter(effect=="No effect?") %>% distinct(.id) %>% unlist()
         s=if(length(x)>1) "s" else ""
         v=glue_collapse(x, "', '", last="', and '")
-        warn(glue("Could not calculate crosstable effects for variable{s} '{v}'. Aren't there 2 groups exactly?"),
-             class = "crosstable_effect_2groups_warning")
+        warn(glue("Cannot calculate crosstable effects for variable{s} '{v}'"),
+             class = "crosstable_effect_other_warning")
     }
     
     rownames(rtn_tbl)=NULL
     return(rtn_tbl)
 }
+
+
+
+#NO GIT
+#' @importFrom dplyr rename_with
+#' @keywords internal
+#' @noRd
+cross_by_multiple = function(data_x, data_y, funs, funs_arg, margin, total, percent_digits, 
+                    showNA, label, test, times, followup, 
+                    test_args, cor_method, effect, effect_args){
+    .SEPARATOR = "_!_"
+    data_x2 = split(data_x, data_y[-1], sep=.SEPARATOR) %>%
+        map(copy_label_from, from=data_x)
+    data_y2 = split(data_y[1], data_y[-1], sep=.SEPARATOR) %>%
+        map(copy_label_from, from=data_y[1])
+
+    rtn2 = map2(data_x2, data_y2, function(a, b) {
+        cross_by(data_x=a, data_y=b, funs=funs, funs_arg=funs_arg,
+                 margin=margin, total=total[total!=1], percent_digits=percent_digits, showNA=showNA,
+                 cor_method=cor_method, times=times, followup=followup, test=F, test_args=test_args,
+                 effect=F, effect_args=effect_args, label=label)
+
+    })
+
+    rtn3 = rtn2 %>% imap(function(x, .name){
+        strat_names=names(data_y)[-1]
+        strat_values=.name %>% str_split(.SEPARATOR) %>% unlist()
+        strat = paste0(strat_names, "=", strat_values) %>% paste(collapse=" & ")
+        x %>% rename_with(function(col) paste0(names(data_y)[1], "=", col, " & ", strat),
+                           .cols=-(1:3))
+    })
+
+    rtn = rtn3 %>% reduce(left_join, by=c(".id", "label", "variable"), suffix=c("", "$error$"))
+
+    if(1 %in% total){
+        x = cross_by(data_x=data_x, data_y=NULL, funs=funs, funs_arg=funs_arg,
+                     margin=margin, total=total, percent_digits=percent_digits, showNA=showNA,
+                     cor_method=cor_method, times=times, followup=followup, test=test, test_args=test_args,
+                     effect=effect, effect_args=effect_args, label=label)
+        rtn$Total = x$value
+    }
+    stopifnot(!names(rtn) %>% str_detect("$error$") %>% any())
+    rtn
+}
+#/NO GIT
+
+
+

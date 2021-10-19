@@ -17,14 +17,14 @@ crosstable(
   funs = c(` ` = cross_summary),
   funs_arg = list(),
   cor_method = c("pearson", "kendall", "spearman"),
-  test = FALSE,
-  test_args = crosstable_test_args(),
   unique_numeric = 3,
   date_format = NULL,
-  effect = FALSE,
-  effect_args = crosstable_effect_args(),
   times = NULL,
   followup = FALSE,
+  test = FALSE,
+  test_args = crosstable_test_args(),
+  effect = FALSE,
+  effect_args = crosstable_effect_args(),
   .vars
 )
 }
@@ -53,21 +53,21 @@ crosstable(
 
 \item{cor_method}{one of ["pearson", "kendall", or "spearman"] to indicate which correlation coefficient is to be used.}
 
-\item{test}{whether to perform tests}
-
-\item{test_args}{See \code{\link{crosstable_test_args}} to override default testing behaviour.}
-
 \item{unique_numeric}{the number of non-missing different levels a variable should have to be considered as numeric}
 
 \item{date_format}{if \code{x} is a vector of Date or POSIXt, the format to apply (see \link{strptime} for formats)}
 
-\item{effect}{whether to compute a effect measure}
-
-\item{effect_args}{See \code{\link{crosstable_effect_args}} to override default behaviour.}
-
 \item{times}{when using formula with \code{\link[survival:Surv]{survival::Surv()}} objects, which times to summarize}
 
 \item{followup}{when using formula with \code{\link[survival:Surv]{survival::Surv()}} objects, whether to display follow-up time}
+
+\item{test}{whether to perform tests}
+
+\item{test_args}{See \code{\link{crosstable_test_args}} to override default testing behaviour.}
+
+\item{effect}{whether to compute a effect measure}
+
+\item{effect_args}{See \code{\link{crosstable_effect_args}} to override default behaviour.}
 
 \item{.vars}{deprecated}
 }
@@ -75,9 +75,8 @@ crosstable(
 A \code{data.frame} of class \code{crosstable}
 }
 \description{
-Generate a descriptive table of all chosen columns, as contingency tables for categorical variables and as calculation summaries for numeric variables. If the \code{by} argument points to a categorical variable, \code{crosstable} will output a description of all columns for every level. Else, if it points to a numeric variable, \code{crosstable} will calculate correlation coefficients with all other selected numeric columns. Finally, if it points to a \code{Surv} object, \code{crosstable} will describe the survival at different times.
-}
-\details{
+Generate a descriptive table of all chosen columns, as contingency tables for categorical variables and as calculation summaries for numeric variables. If the \code{by} argument points to one or several categorical variables, \code{crosstable} will output a description of all columns for each level. Otherwise, if it points to a numeric variable, \code{crosstable} will calculate correlation coefficients with all other selected numeric columns. Finally, if it points to a \code{Surv} object, \code{crosstable} will describe the survival at different times.\cr
+\cr
 Can be formatted as an HTML table using \code{\link[=as_flextable]{as_flextable()}}.
 }
 \examples{
@@ -88,27 +87,30 @@ crosstable(mtcars2)
 
 #tidyselection, custom functions
 library(dplyr)
-crosstable(mtcars2, ends_with("t"), starts_with("c"), by=vs, 
+crosstable(mtcars2, c(ends_with("t"), starts_with("c")), by=vs, 
            funs=c(mean, quantile), funs_arg = list(probs=c(.25,.75)))
 
-#margin and totals
-crosstable(mtcars2, disp, vs, by=am, 
+#margin and totals, multiple by
+crosstable(mtcars2, c(disp, cyl), by=c(am, vs), 
            margin=c("row", "col"), total = "both")
 
 #predicate selection, correlation, testing
 crosstable(mtcars2, where(is.numeric), by=hp, test=TRUE)
 
-#lambda selection, effect calculation
+#lambda selection & effect calculation
 crosstable(mtcars2, ~is.numeric(.x) && mean(.x)>50, by=vs, effect=TRUE)
 
 #Dates
 mtcars2$my_date = as.Date(mtcars2$hp , origin="2010-01-01") \%>\% set_label("Some nonsense date")
 crosstable(mtcars2, my_date, by=vs, date_format="\%d/\%m/\%Y")
 
-#Survival data (using formula UI)
+#Survival data (using formula syntax)
 library(survival)
 crosstable(aml, Surv(time, status) ~ x,times=c(0,15,30,150), followup=TRUE)
 }
 \seealso{
 https://danchaltiel.github.io/crosstable/, as_flextable, import_labels
+}
+\author{
+Dan Chaltiel
 }

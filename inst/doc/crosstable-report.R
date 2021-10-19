@@ -1,12 +1,14 @@
-## ----init, include = FALSE----------------------------------------------------
+## ----init, include = FALSE------------------------------------------------------------------------
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+options(width = 100, 
+        crosstable_verbosity_autotesting="quiet")
 library(crosstable)
 library(dplyr)
 
-## ----officer, message=FALSE, warning=FALSE------------------------------------
+## ----officer, message=FALSE, warning=FALSE--------------------------------------------------------
 library(officer)
 library(ggplot2)
 ct1=crosstable(iris, by=Species, test=TRUE)
@@ -17,8 +19,8 @@ options(crosstable_units="cm")
 my_plot = ggplot(data = iris ) +
   geom_point(mapping = aes(Sepal.Length, Petal.Length))
 
-doc = read_docx() %>% 
-  body_add_title("Dataset iris", 1) %>%
+doc = read_docx() %>% #default template
+  body_add_title("Dataset iris (nrow={nrow(iris)})", 1) %>%
   body_add_title("Not compacted", 2) %>%
   body_add_normal("Table \\@ref(table_autotest) is an example. However, automatic testing is bad and I should feel bad.") %>%
   body_add_crosstable(ct1) %>%
@@ -33,19 +35,14 @@ doc = read_docx() %>%
   body_add_title("Dataset mtcars2", 1) %>%
   body_add_normal("This dataset has {nrow(ct3)} rows and {x} columns.", x=ncol(ct3)) %>%
   body_add_normal("Look, there are labels!") %>%
-  body_add_crosstable(ct2, compact=TRUE) %>%
-  body_add_break() %>%
-  body_add_title("Dataset esoph", 1) %>%
-  body_add_normal("This one was compacted beforehand for some reason.") %>%
-  body_add_crosstable(compact(ct3))
+  body_add_crosstable(ct2, compact=TRUE)
 
-## ----save, include=FALSE------------------------------------------------------
-# stop("Working directory = ", getwd())
+## ----save, include=FALSE--------------------------------------------------------------------------
 if(file.exists("../examples"))
   print(doc, "../examples/vignette_officer.docx")
 
-## ----print, eval=FALSE--------------------------------------------------------
-#  filename=file.path("..", "examples", "vignette_officer.docx", fsep="\\")#`\\` is needed for shell.exec on Windows
-#  print(doc, filename) #write the docx file
-#  shell.exec(filename) #open the docx file (fails if it is already open)
+## ----print, eval=FALSE----------------------------------------------------------------------------
+#  write_and_open(doc)                   #save and open the docx file in a temporary file for a quick peek
+#  write_and_open(doc, "my_report.docx") #fails if it is already open
+#  print(doc, "my_report.docx")          #only save the docx file
 

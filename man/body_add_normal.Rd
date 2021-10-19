@@ -5,7 +5,7 @@
 \alias{body_add_glued}
 \title{Add a new paragraph with default style}
 \usage{
-body_add_normal(doc, ..., .sep = "")
+body_add_normal(doc, ..., .sep = "", squish = TRUE)
 }
 \arguments{
 \item{doc}{the doc object (created with the \code{read_docx} function of \code{officer} package)}
@@ -13,6 +13,8 @@ body_add_normal(doc, ..., .sep = "")
 \item{...}{one or several character strings, pasted using \code{.sep}. As with \code{glue::glue()}, expressions enclosed by braces will be evaluated as R code. If more than one variable is passed, all should be of length 1.}
 
 \item{.sep}{Separator used to separate elements.}
+
+\item{squish}{Whether to squish the result (remove trailing and repeated spaces). Default to \code{TRUE}.}
 }
 \value{
 a new doc object
@@ -36,5 +38,7 @@ doc = read_docx()  \%>\%
 #write_and_open(doc)
 }
 \author{
+Dan Chaltiel
+
 Dan Chaltiel
 }

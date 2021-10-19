@@ -13,7 +13,7 @@
 #'   
 #'   \item `test_survival` - a function of one argument (the formula `surv~by`), used to compare survival estimations. Must return a list of two components: `p.value` and `method`. See [`test_survival_logrank`] for example.
 #'   
-#'   \item `display_test` - function used to display the test result. See [`display_test`].
+#'   \item `test_display` - function used to display the test result. See [`display_test`].
 #'   \item `plim` - number of digits for the p value
 #'   \item `show_method` - whether to display the test name (logical)
 #' } 
@@ -39,7 +39,7 @@ crosstable_test_args = function(){
     test_tabular = test_tabular_auto, 
     test_correlation = test_correlation_auto, 
     test_survival = test_survival_logrank, 
-    display_test = display_test, 
+    test_display = display_test, 
     plim = 4, 
     show_method = TRUE
   )
@@ -57,6 +57,7 @@ crosstable_test_args = function(){
 #' @return a string
 #' @importFrom stringr str_squish
 #' @export
+#' @author Dan Chaltiel
 display_test = function(test, digits = 4, method = TRUE) {
   if (all(sapply(test, is.null)))
     "No test"
@@ -80,10 +81,10 @@ display_test = function(test, digits = 4, method = TRUE) {
 #'
 #' @param x vector
 #' @param y another vector
-#' @author David Hajage
 #' @return a list with two components: p.value and method
 #' @importFrom stats chisq.test fisher.test
 #' @export
+#' @author Dan Chaltiel, David Hajage
 test_tabular_auto = function(x, y) {
   tab = table(x, y)
   exp = rowSums(tab)%*%t(colSums(tab))/sum(tab)
@@ -109,8 +110,8 @@ test_tabular_auto = function(x, y) {
 #' @param x vector
 #' @param g another vector
 #' @return a list with two components: p.value and method
-#' @author David Hajage, Dan Chaltiel
-#' @importFrom nortest ad.test
+#' @author Dan Chaltiel, David Hajage
+# @importFrom nortest ad.test
 #' @importFrom stats shapiro.test bartlett.test kruskal.test t.test oneway.test
 #' @export
 test_summarize_auto = function(x, g) {
@@ -168,8 +169,9 @@ test_summarize_auto = function(x, g) {
 #' @param method "pearson", "kendall", or "spearman"
 #'
 #' @return the correlation test with appropriate method
-#' @importFrom stringr str_detect
+#' @author Dan Chaltiel, David Hajage
 #' @export
+#' @importFrom stringr str_detect
 test_correlation_auto = function(x, by, method) {
   exact=TRUE
   ct = withCallingHandlers(
@@ -198,7 +200,7 @@ test_correlation_auto = function(x, by, method) {
 #'
 #' @param formula a formula
 #' @return a list with two components: p.value and method
-#' @author David Hajage
+#' @author Dan Chaltiel, David Hajage
 #' @export
 #' @importFrom survival survdiff
 #' @importFrom stats pchisq
@@ -230,10 +232,7 @@ test_survival_logrank = function(formula) {
 #'   mutate(Petal.Width.qt = paste0("Q", ntile(Petal.Width, 5)) %>% ordered()) %>%
 #'   crosstable(Petal.Length ~ Petal.Width.qt, test=TRUE, test_args = my_test_args)
 test_summarize_linear_contrasts = function(x, y){
-  if(!requireNamespace("gmodels", quietly = TRUE)) {
-    abort("Package \"gmodels\" needed for this function to work. Please install it.",
-          class="missing_package_error")
-  }
+  assert_is_installed("gmodels", "test_summarize_linear_contrasts()")
   x = as.numeric(x)
   stopifnot(is.ordered(y))
   levels_seq = 1:length(levels(y))
@@ -254,7 +253,7 @@ test_summarize_linear_contrasts = function(x, y){
 #' 
 #' @keywords internal
 #' @importFrom stats shapiro.test na.omit
-#' @importFrom nortest ad.test
+# @importFrom nortest ad.test
 #' @noRd
 test_normality = function(x, g){
   x=as.numeric(x)
@@ -396,9 +395,7 @@ test_summarize_auto.dan = function (x, g) {
 
 
 
-#TODO add CochranArmitageTest
-
-# @importFrom DescTools CochranArmitageTest
+#TODO implement CochranArmitageTest
 #' @importFrom stats cor.test chisq.test fisher.test
 #' @keywords internal
 #' @noRd
@@ -407,11 +404,9 @@ test_tabular_auto2 = function (x, y) {
   if(is.ordered(x) & is.ordered(y)){
     test = cor.test(as.numeric(x), as.numeric(y), method = "spearman", exact = FALSE)
   } else if((is.ordered(x) | is.ordered(y)) & any(dim(tab)==2)){
-    if (!requireNamespace("DescTools", quietly = TRUE)) {
-      abort("Package \"DescTools\" needed for this function to work. Please install it.",
-           class="missing_package_error")
-    }
-    test = DescTools::CochranArmitageTest(tab, alternative = "two.sided")
+    # assert_is_installed("DescTools", "CochranArmitageTest() in test_tabular_auto2()")
+    # test = DescTools::CochranArmitageTest(tab, alternative = "two.sided")
+    test = CochranArmitageTest(tab, alternative = "two.sided")
   } else{
     exp = rowSums(tab) %*% t(colSums(tab))/sum(tab)
     if (any(dim(table(x, y)) == 1)) 

@@ -54,7 +54,8 @@ Default method to convert an object to a \code{gt} table
 xx = mtcars2 \%>\% dplyr::select(1:9)
 crosstable(xx) \%>\% as_gt
 crosstable(xx, by=am) \%>\% as_gt
-crosstable(xx, by=am, test=TRUE, total=TRUE, effect=TRUE) \%>\% as_gt(keep_id=TRUE)
+crosstable(xx, by=cyl, test=TRUE, total=TRUE, effect=TRUE) \%>\% 
+   as_gt(keep_id=TRUE, show_test_name=FALSE, by_header="Cylinders")
 }
 \seealso{
 \code{\link[=as_flextable.crosstable]{as_flextable.crosstable()}}
@@ -62,6 +63,12 @@ crosstable(xx, by=am, test=TRUE, total=TRUE, effect=TRUE) \%>\% as_gt(keep_id=TR
 \code{\link[gt:gt]{gt::gt()}}
 }
 \author{
+Dan Chaltiel
+
+Dan Chaltiel
+
+Dan Chaltiel
+
 Dan Chaltiel
 }
 \concept{as_gt methods}

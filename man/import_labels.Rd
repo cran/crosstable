@@ -18,7 +18,7 @@ import_labels(
 save_labels(.tbl)
 }
 \arguments{
-\item{.tbl}{the data.frame to labellize}
+\item{.tbl}{the data.frame to be labelled}
 
 \item{data_label}{a data.frame from which to import labels. If missing, the function will take the labels from the last dataframe on which \code{\link[=save_labels]{save_labels()}} was called.}
 
@@ -64,4 +64,9 @@ mtcars2 \%>\%
 }
 \seealso{
 \code{\link[=get_label]{get_label()}}, \code{\link[=set_label]{set_label()}}, \code{\link[=remove_label]{remove_label()}}, \code{\link[=save_labels]{save_labels()}}
+}
+\author{
+Dan Chaltiel
+
+Dan Chaltiel
 }

@@ -14,17 +14,19 @@
 #' @describeIn as_gt For crosstables
 #' @seealso [as_flextable.crosstable()]
 #' 
+#' @author Dan Chaltiel
+#' @export
 #' @importFrom checkmate assert_class vname
 #' @importFrom stringr str_remove
 #' @importFrom dplyr %>% mutate across everything any_of lag select
 #' @importFrom glue glue
-#' @export
 #'
 #' @examples
 #' xx = mtcars2 %>% dplyr::select(1:9)
 #' crosstable(xx) %>% as_gt
 #' crosstable(xx, by=am) %>% as_gt
-#' crosstable(xx, by=am, test=TRUE, total=TRUE, effect=TRUE) %>% as_gt(keep_id=TRUE)
+#' crosstable(xx, by=cyl, test=TRUE, total=TRUE, effect=TRUE) %>% 
+#'    as_gt(keep_id=TRUE, show_test_name=FALSE, by_header="Cylinders")
 as_gt.crosstable = function(x, show_test_name = TRUE, 
                             by_header = NULL, keep_id = FALSE,
                             generic_labels=list(id = ".id", variable = "variable", value = "value", 
@@ -34,12 +36,16 @@ as_gt.crosstable = function(x, show_test_name = TRUE,
     
     assert_class(x, "crosstable", .var.name=vname(x))
     if (inherits(x, "compacted_crosstable")) {
-        abort("`as_gt` is not implemented for compacted crosstable yet.",
-              class="compact_not_implemented_error")
+        abort("`as_gt` is not implemented for compacted crosstables yet.",
+              class="gt_compact_not_implemented_error")
+    }
+    if (inherits(x, "crosstable_multiby")) {
+        abort("`as_gt` is not implemented for multi-by crosstables yet.",
+              class="gt_multiby_not_implemented_error")
     }
     
     by_label = attr(x, "by_label")
-    by_levels = attr(x, "by_levels") %>% replace_na("NA")
+    by_levels = attr(x, "by_levels") %>% unlist() %>% unname() %>% replace_na("NA")
     by = attr(x, "by")
     has_by =  !is.null(by)
     if(has_by && is.null(by_label)) by_label=by
@@ -84,12 +90,10 @@ as_gt.crosstable = function(x, show_test_name = TRUE,
 #'
 #' @family as_gt methods
 #' @seealso [gt::gt()]
+#' @author Dan Chaltiel
 #' @export
 as_gt = function(x, ...){
-    if (!requireNamespace("gt", quietly = TRUE)) {
-        abort("Package \"gt\" is obviously needed for function as_gt() to work. Please install it.",
-              class="missing_package_error")
-    }
+    assert_is_installed("gt", "as_gt()")
     UseMethod("as_gt")
 }
 
@@ -102,10 +106,20 @@ as_gt = function(x, ...){
 #' @describeIn as_gt default function
 #'
 #' @family as_gt methods
+#' @author Dan Chaltiel
 #' @export
 as_gt.default = function(x, ...){
     gt::gt(data=x, ...)
 }
 
 
+# https://github.com/rstudio/gt/issues/632
+# example %>% 
+#     columnwide_summary_rows(
+#         groups = TRUE,
+#         fns = list(
+#             "Income sum in 1995 and 2005" = ~ sum(.$`1995`, .$`2005`),
+#             "Correlation between income in 1995 and in 2005" = ~ cor(.$`1995`, .$`2005`)
+#         )
+#     )
 

@@ -9,10 +9,12 @@
 #' @param x a `crosstable` object
 #' @param body_fontsize fontsize of the body
 #' @param header_fontsize fontsize of the header
+#' @param padding_v vertical padding of all table rows
 #' @param ... further arguments passed to [as_flextable.crosstable()]
 #'
+#' @author Dan Chaltiel
 #' @export
-#' @importFrom flextable body_add_flextable fontsize
+#' @importFrom flextable body_add_flextable fontsize padding
 #' @importFrom checkmate assert_class vname
 #' 
 #' @return The docx object `doc`
@@ -30,13 +32,16 @@
 #' print(doc, target = dfile)
 #' if(interactive()) browseURL(dfile)
 body_add_crosstable = function (doc, x, body_fontsize=NULL, 
-                                header_fontsize=ceiling(body_fontsize*1.2), ...) {
+                                header_fontsize=ceiling(body_fontsize*1.2), 
+                                padding_v=NULL, ...) {
     assert_class(x, "crosstable", .var.name=vname(x))
     ft = as_flextable(x, ...)
     if(length(body_fontsize)!=0)
-        fontsize(ft, size = body_fontsize, part = "body")
+        ft = fontsize(ft, size = body_fontsize, part = "body")
     if(length(header_fontsize)!=0)
-        fontsize(ft, size = header_fontsize, part = "header")
+        ft = fontsize(ft, size = header_fontsize, part = "header")
+    if(length(padding_v)!=0)
+        ft = padding(ft, padding.top=padding, padding.bottom=padding, part = "body")
     
     body_add_flextable(doc, ft)
 }
@@ -55,14 +60,16 @@ body_add_crosstable = function (doc, x, body_fontsize=NULL,
 #' @param doc the doc object (created with the `read_docx` function of `officer` package)
 #' @param ... one or several character strings, pasted using `.sep`. As with `glue::glue()`, expressions enclosed by braces will be evaluated as R code. If more than one variable is passed, all should be of length 1.
 #' @param .sep Separator used to separate elements.
+#' @param squish Whether to squish the result (remove trailing and repeated spaces). Default to `TRUE`.
 #'
 #' @return a new doc object
-#' @author Dan Chaltiel
 #' 
+#' @author Dan Chaltiel
 #' @export
 #' @importFrom glue glue glue_collapse
 #' @importFrom officer body_add_par
 #' @importFrom purrr map_dbl
+#' @importFrom stringr str_squish
 #' 
 #' @return The docx object `doc`
 #' 
@@ -77,14 +84,16 @@ body_add_crosstable = function (doc, x, body_fontsize=NULL,
 #'     body_add_normal("However, table mtcars has {ncol(mtcars)} columns") %>% #glue style
 #'     body_add_normal(info_rows)                                              #vector style
 #' #write_and_open(doc)
-body_add_normal = function(doc, ..., .sep="") {
+body_add_normal = function(doc, ..., .sep="", squish=TRUE) {
     dots = list(...)
     normal_style = getOption('crosstable_style_normal', doc$default_styles$paragraph)
     lengths = map_dbl(dots, length)
     
     if(all(lengths==1)){ #one or several vectors of length 1
         value = glue(..., .sep=.sep, .envir=parent.frame())
+        if(squish) value = str_squish(value)
         if(str_detect(value, "\\\\@ref\\((.*?)\\)")){
+            # doc = body_add_par(doc, "") %>% parse_reference(value)
             doc = body_add_par(doc, "") %>% parse_reference(value)
         } else{
             doc = body_add_par(doc, value, style=normal_style)
@@ -105,6 +114,7 @@ body_add_normal = function(doc, ..., .sep="") {
 #' @usage NULL
 #' @importFrom lifecycle deprecate_warn
 #' @rdname body_add_normal
+#' @author Dan Chaltiel
 #' @export
 body_add_glued = function(...){
     deprecate_warn("0.2.0", "body_add_glued()", "body_add_normal()")# nocov
@@ -119,25 +129,29 @@ body_add_glued = function(...){
 #' @param doc the doc object (created with the \code{read_docx} function of \code{officer} package)
 #' @param value a character string
 #' @param level the level of the title. See \code{styles_info(doc)} to know the possibilities.
+#' @param squish Whether to squish the result (remove trailing and repeated spaces). Default to `TRUE`.
 #' @param style the name of the title style. See \code{styles_info(doc)} to know the possibilities.
 #' 
 #' @return The docx object `doc`
 #'
 #' @author Dan Chaltiel
-#' @importFrom officer body_add_par
 #' @export
+#' @importFrom officer body_add_par
+#' @importFrom stringr str_squish
+#' @importFrom glue glue
 #' @examples
 #' library(officer)
 #' library(crosstable)
 #' library(dplyr)
-#' doc = read_docx()
-#' doc = doc %>% 
-#'    body_add_title("La table iris", 1) %>% 
+#' doc = read_docx() %>% 
+#'    body_add_title("La table iris (nrow={nrow(iris)})", 1) %>% 
 #'    body_add_title("Description", 2) %>% 
 #'    body_add_normal("La table iris a ", ncol(iris), " colonnes.")
 #' #write_and_open(doc)
-body_add_title = function(doc, value, level = 1, 
+body_add_title = function(doc, value, level = 1, squish=TRUE, 
                           style = getOption('crosstable_style_heading', "heading")) {
+    value = glue(value, .envir = parent.frame())
+    if(squish) value = str_squish(value)
     style = paste(style, level)
     body_add_par(doc, value, style = style)
 }
@@ -156,7 +170,6 @@ body_add_title = function(doc, value, level = 1,
 #'
 #' @details Ordered lists and bullet lists are not supported by the default officer template (see [https://github.com/davidgohel/officer/issues/262](#262)). You have to manually set custom styles matching those list in a custom Word template file. Then, you can use either the `style` argument or crosstable options. See examples for more details.
 #'
-#' @author Dan Chaltiel
 #' @export
 #'
 #' @examples
@@ -184,6 +197,7 @@ body_add_list = function(doc, value, ordered=FALSE, style=NULL, ...){
 }
 
 #' @rdname body_add_list
+#' @author Dan Chaltiel
 #' @export
 body_add_list_item = function(doc, value, ordered=FALSE, style=NULL, ...){
     if(is.null(style)){
@@ -206,61 +220,146 @@ body_add_list_item = function(doc, value, ordered=FALSE, style=NULL, ...){
 #'
 #' @param doc a docx object
 #' @param legend the table legend. As with [glue::glue()], expressions enclosed by braces will be evaluated as R code.
-#' @param bookmark the id of the bookmark. This is the id that should then be called in [body_add_normal()] using `"\\@ref(id)"`.
-#' @param legend_style style of of the whole legend. May depend on the docx template
-#' @param style style of the number. May depend on the docx template (default to strong)
-#' @param legend_name name before the numbering. Useful for translation
+#' @param bookmark the id of the bookmark. This is the id that should then be called in [body_add_normal()] using the `"\\@ref(id)"` syntax.
+#' @param legend_style style of of the whole legend. May depend on the docx template. However, if `name_format` is provided with a specific `font.size`, this size will apply to the whole legend for consistency.
+#' @param name_format format of the legend's LHS (legend_name + numbering) using [officer::fp_text_lite()] or [officer::fp_text()]. Default to `fp_text_lite(bold=TRUE)` in addition to the format defined in `legend_style`. Note that the reference to the bookmark will have the same specific format in the text.
+#' @param legend_name name before the numbering. Default to either "Table" or "Figure".
+#' @param style deprecated in favor of `name_format`.
 #' @param seqfield Keep default. Otherwise, you may figure it out doing this: in a docx file, insert a table legend, right click on the inserted number and select "Toggle Field Codes". This argument should be the value of the field, with extra escaping.
+#' @param legacy use the old version of this function, if you cannot update `{officer}` to v0.4+
 #' 
 #' @return The docx object `doc`
 #'
 #' @section Warning:
-#' At first, the legends added with [body_add_table_legend()] or [body_add_figure_legend()] have no numbers. You have to manually update the references in MS Word: select all (\kbd{Ctrl}+\kbd{A}), then update (\kbd{F9}). You might have to do this several times. More info on [https://ardata-fr.github.io/officeverse/faq.html#update-fields](https://ardata-fr.github.io/officeverse/faq.html#update-fields).
+#' Be aware that you unfortunately cannot reference a bookmark more than once using this method. Writing: \cr `body_add_normal("Table \\@ref(iris_col1) is about flowers. I like this Table \\@ref(iris_col1).")`\cr
+#' will prevent the numbering from applying.
+#' @section What to do if there is still no numbering?:
+#' During the opening of the document, MS Word might ask you to "update the fields", to which you should answer "Yes".  \cr
+#' If it is not asked or if you answer "No", the legends added with [body_add_table_legend()] or [body_add_figure_legend()] might have no actual numbers displayed. \cr
+#' In this case, you have to manually update the references in MS Word: select all (\kbd{Ctrl}+\kbd{A}), then update (\kbd{F9}), sometimes twice. More info on [https://ardata-fr.github.io/officeverse/faq.html#update-fields](https://ardata-fr.github.io/officeverse/faq.html#update-fields).
+#' @rdname body_add_legend
+#' @name body_add_legend
 #' @author Dan Chaltiel
+#' @importFrom utils packageVersion
+#' @importFrom rlang is_missing warn
+#' @importFrom lifecycle is_present deprecate_warn
 #' @export
 #' 
 #' @examples 
 #' library(officer)
 #' p=ggplot2::quickplot(x=Sepal.Length, y=Sepal.Width, color=Species, data=iris)
-#' x=read_docx() %>% 
-#'   body_add_normal("As you can see in Table \\@ref(tab1) and in Figure \\@ref(fig1), ", 
-#'                   "the iris dataset is about flowers.") %>% 
-#'   body_add_normal() %>% 
-#'   body_add_table_legend("Iris dataset", bookmark="tab1") %>% 
-#'   body_add_crosstable(crosstable(iris)) %>% 
-#'   body_add_gg(p) %>% 
-#'   body_add_figure_legend("Iris plot", bookmark="fig1")
+#' fp_italic = fp_text_lite(italic=TRUE, font.size=10)
+#' x=read_docx() %>%
+#'     body_add_normal("There is Table \\@ref(iris_col1) and Table \\@ref(iris_col2). ",
+#'                     "The `iris` dataset is about flowers.") %>%
+#'     body_add_normal() %>%
+#'     body_add_table_legend("Iris dataset, column 1 (mean={round(mean(iris[[1]]), 2)})", 
+#'                            bookmark="iris_col1") %>%
+#'     body_add_crosstable(crosstable(iris[1])) %>%
+#'     body_add_normal() %>%
+#'     body_add_table_legend("Iris dataset, column 2 (mean={round(mean(iris[[2]]), 2)})", 
+#'                           bookmark="iris_col2",
+#'                           name_format=fp_italic, legend_style="Balloon Text") %>%
+#'     body_add_crosstable(crosstable(iris[2])) %>% 
+#'     body_add_normal() %>%
+#'     body_add_normal("There is also the figure \\@ref(iris_fig)") %>%
+#'     body_add_gg(p) %>%
+#'     body_add_figure_legend("Iris plot", bookmark="iris_fig")
 #' write_and_open(x)
-#' #press Ctrl+A then F9 twice for the reference to appear.
+#' #If asked to update fields, press "Yes". Otherwise press Ctrl+A then F9 twice for the references 
+#' #to appear.
 body_add_table_legend = function(doc, legend, bookmark=NULL, 
-                                 legend_style=getOption('crosstable_style_legend', "Table Caption"), 
-                                 style=getOption('crosstable_style_strong', "strong"), 
-                                 legend_name="Table",
-                                 seqfield="SEQ Table \\* Arabic"){
-    body_add_legend(doc=doc, legend=legend, legend_name=legend_name, 
-                    bookmark=bookmark, legend_style=legend_style, 
-                    style=style, seqfield=seqfield)
+                                 legend_style=getOption('crosstable_style_legend', 
+                                                        doc$default_styles$paragraph), 
+                                 style=deprecated(), 
+                                 name_format=NULL,
+                                 legend_name="Table", 
+                                 seqfield="SEQ Table \\* Arabic", 
+                                 legacy=FALSE){
+    body_add_legend(doc=doc, legend=legend, legend_name=legend_name,
+                    bookmark=bookmark, legend_style=legend_style,
+                    name_format=name_format, seqfield=seqfield, 
+                    style=style, legacy=legacy)
 }
 
-#' @rdname body_add_table_legend
+#' @rdname body_add_legend
 #' @export
 body_add_figure_legend = function(doc, legend, bookmark=NULL, 
-                                  legend_style=getOption('crosstable_style_legend', "Image Caption"), 
-                                  style=getOption('crosstable_style_strong', "strong"), 
-                                  legend_name="Figure",
-                                  seqfield="SEQ Figure \\* Arabic"){
-    body_add_legend(doc=doc, legend=legend, legend_name=legend_name, 
-                    bookmark=bookmark, legend_style=legend_style, 
-                    style=style, seqfield=seqfield)
+                                  legend_style=getOption('crosstable_style_legend', 
+                                                         doc$default_styles$paragraph), 
+                                  style=deprecated(), 
+                                  name_format=NULL,
+                                  legend_name="Figure", 
+                                  seqfield="SEQ Figure \\* Arabic", 
+                                  legacy=FALSE){
+    body_add_legend(doc=doc, legend=legend, legend_name=legend_name,
+                    bookmark=bookmark, legend_style=legend_style,
+                    name_format=name_format, seqfield=seqfield, 
+                    style=style, legacy=legacy)
 }
 
-#' @importFrom stringr str_detect str_match_all
+
 #' @importFrom glue glue
-#' @importFrom rlang abort
-#' @importFrom officer slip_in_text slip_in_seqfield body_bookmark
+#' @importFrom officer ftext fpar run_bookmark run_word_field body_add_fpar
 #' @keywords internal
 #' @noRd
-body_add_legend = function(doc, legend, legend_name, bookmark, legend_style, style, seqfield){
+body_add_legend = function(doc, legend, legend_name, bookmark, 
+                           legend_style, name_format, seqfield, 
+                           style, legacy){
+    
+    if(packageVersion("officer")<"0.4" || legacy){
+        if(!legacy){
+            warn("You might want to update officer to v0.4+ in order to get the best of crosstable::body_add_xxx_legend().", 
+                 .frequency="once", 
+                 .frequency_id="body_add_xxx_legend_officer_version")
+        }
+        if(is_missing(style)){
+            style = getOption('crosstable_style_strong', "strong")
+        }
+        
+        rtn = body_add_legend_legacy(doc=doc, legend=legend, legend_name=legend_name,
+                               bookmark=bookmark, legend_style=legend_style, style=style, seqfield=seqfield)
+        return(rtn)
+    } 
+    
+    if(is_present(style)){
+        deprecate_warn("0.2.2", "body_add_X_legend(style)", 
+                       "body_add_X_legend(name_format)", 
+                       details="The `style` argument has been ignored. Use `legacy=TRUE` to override.")
+    }
+
+    fp_text2 = officer::fp_text_lite #v0.4+
+    if(is.null(name_format)){
+        name_format = fp_text2(bold=TRUE)
+    }
+    fp_size = fp_text2(font.size=name_format$font.size)
+    
+    legend = glue(legend, .envir = parent.frame())
+    legend_name = paste0(legend_name, " ")
+    
+    bkm = run_word_field(seqfield, prop=name_format)
+    if(!is.null(bookmark)){
+        bkm = run_bookmark(bookmark, bkm)
+    }
+    
+    legend_fpar = fpar(
+        ftext(legend_name, name_format), 
+        bkm,
+        ftext(": ", name_format), 
+        ftext(legend, fp_size)
+    )
+    
+    body_add_fpar(doc, legend_fpar, style=legend_style)
+}
+
+
+#' @importFrom glue glue
+#' @importFrom officer body_add_par slip_in_text slip_in_seqfield body_bookmark
+#' @keywords internal
+#' @noRd
+body_add_legend_legacy = function(doc, legend, legend_name, bookmark, 
+                                  legend_style, style, seqfield){
+    # browser()
     legend = glue(legend, .envir = parent.frame())
     rtn = doc %>% 
         body_add_par(value=legend, style=legend_style) %>% 
@@ -269,8 +368,7 @@ body_add_legend = function(doc, legend, legend_name, bookmark, legend_style, sty
     if(!is.null(bookmark)){
         rtn = body_bookmark(rtn, bookmark)
     }
-    rtn %>% 
-        slip_in_text(str=glue("{legend_name} "), style=style, pos="before")
+    slip_in_text(rtn, str=glue("{legend_name} "), style=style, pos="before")
 }
 
 
@@ -287,6 +385,7 @@ body_add_legend = function(doc, legend, legend_name, bookmark, legend_style, sty
 #' 
 #' @seealso [body_add_gg2()]
 #'
+#' @author Dan Chaltiel
 #' @export
 #' @importFrom officer body_add_img
 #' @examples
@@ -322,8 +421,9 @@ body_add_img2 = function(doc, src, width, height,
 #' 
 #' @return The docx object `doc`
 #' 
-#' @importFrom checkmate assert_class
+#' @author Dan Chaltiel
 #' @export
+#' @importFrom checkmate assert_class
 #' @examples
 #' if(require("ggplot2") && capabilities(what = "png")){
 #'   library(officer)
@@ -342,10 +442,7 @@ body_add_gg2 = function(doc, value, width = 6, height = 5,
                         units = getOption("crosstable_units", "in"), 
                         style = getOption("crosstable_style_image", doc$default_styles$paragraph), 
                         res = 300, ... ){
-    if(!requireNamespace("ggplot2") ){
-        abort("package ggplot2 is required to use this function",
-              class="missing_package_error") # nocov
-    }
+    assert_is_installed("ggplot2", "body_add_gg2()")
     assert_class(value, "ggplot")
     units = match.arg(units, c("in", "cm", "mm"))
     file = tempfile(fileext=".png")
@@ -365,6 +462,7 @@ body_add_gg2 = function(doc, value, width = 6, height = 5,
 #' 
 #' @return The docx object `doc`
 #'
+#' @author Dan Chaltiel
 #' @export
 body_add_crosstable_footnote = function(doc){
     body_add_normal(doc, "Med: median, IQR: interquartile range, Std: standard deviation. Percentages are expressed in column.")    
@@ -376,7 +474,7 @@ body_add_crosstable_footnote = function(doc){
 # Officer helpers ---------------------------------------------------------
 
 crosstable_luafilters = function(){
-    x=system.file(package = "crosstable", "rmarkdown/page-break.lua")
+    x = system.file(package="crosstable", "rmarkdown/page-break.lua")
     paste0("--lua-filter=", x)
 }
 
@@ -386,19 +484,20 @@ crosstable_luafilters = function(){
 #'
 #' @param x an `rdocx` object
 #' @param return_vector use `TRUE` for compatibility with [officer::docx_bookmarks()]
+#' @param target one of c("all", "header", "body", "footer")
 #' 
 #' @return a list with all bookmarks
 #'
 #' @importFrom checkmate assert_class
 #' @author Dan Chaltiel
 #' @export
-docx_bookmarks2 = function(x, return_vector=FALSE) {#nocov start
+docx_bookmarks2 = function(x, return_vector=FALSE, 
+                           target=c("all", "header", "body", "footer")) {#nocov start
     #cannot test nor add examples as there is officer::body_bookmark() but no officer::head_bookmark()
+    
     assert_class(x, "rdocx")  
-    if(!requireNamespace("xml2")){
-        abort("Package `xml2` is needed for docx_bookmarks2() to work.",
-              class="missing_package_error")
-    }
+    assert_is_installed("xml2", "docx_bookmarks2()")
+    target = match.arg(target)
     doc_ = xml2::xml_find_all(x$doc_obj$get(), "//w:bookmarkStart[@w:name]")
     doc_ = setdiff(xml2::xml_attr(doc_, "name"), "_GoBack")
     head_ = sapply(x$headers, function(h) {
@@ -409,11 +508,13 @@ docx_bookmarks2 = function(x, return_vector=FALSE) {#nocov start
         tmp = xml2::xml_find_all(f$get(), "//w:bookmarkStart[@w:name]")
         setdiff(xml2::xml_attr(tmp, "name"), "_GoBack")
     })
-    if(return_vector){
-        return(unname(unlist(c(doc_, head_, foot_)))) #alternative return
-    }
     
-    list(header=unname(unlist(head_)), body=unname(unlist(doc_)), footer=unname(unlist(foot_)))
+    rtn = list(header=unname(unlist(head_)), body=unname(unlist(doc_)), footer=unname(unlist(foot_)))
+    if(target!="all"){
+        rtn = rtn[target]
+    }
+    if(return_vector) return(unname(unlist(rtn)))
+    rtn
 }#nocov end
 
 
@@ -427,11 +528,11 @@ docx_bookmarks2 = function(x, return_vector=FALSE) {#nocov start
 #' @return Nothing, called for its side effects
 #'
 #' @author Dan Chaltiel
+#' @export
 #' @importFrom utils browseURL
 #' @importFrom rlang abort
 #' @importFrom stringr str_detect
 #' @importFrom glue glue
-#' @export
 #'
 #' @examples
 #' library(officer)
@@ -480,6 +581,40 @@ write_and_open = function(doc, docx.file){
 
 
 
+# External utils ---------------------------------------------------------
+
+# nocov start
+#' Generate a macro file for autofitting
+#'
+#' This function generates a file that can be imported into MS Word in order to use a macro for autofitting all tables in a document at once. This macro file should be imported only once per computer.
+#' 
+#' @section Installation:
+#'  * Run `generate_autofit_macro()` in `R` to generate the file `crosstable_autofit.bas` in your working directory. 
+#'  * In MS Word, press Alt+F11 to open the VB Editor.
+#'  * In the Editor, go to `File` > `Import` or press `Ctrl+M` to open the import dialog, and import `crosstable_autofit.bas`. There should now be a "CrosstableMacros" module in the "Normal" project.
+#'  * Run the macro, either from the VB Editor or from `View` > `Macros` > `View Macros` > `Run`.
+#'
+#' @return nothing
+#' @author Dan Chaltiel
+#' @export
+generate_autofit_macro = function(){
+    fileConn<-file("crosstable_autofit.bas")
+    writeLines(c(
+        'Attribute VB_Name = "CrosstableMacros"',
+        'Sub CrosstableAutofitAll()',
+        '\tDim t As Table',
+        '\tFor Each t In ActiveDocument.Tables',
+        '\t\tt.AutoFitBehavior wdAutoFitContent',
+        '\t\tt.AutoFitBehavior wdAutoFitWindow',
+        '\tNext t',
+        'End Sub'
+    ), fileConn)
+    close(fileConn)
+    invisible(NULL)
+}
+
+# nocov end
+
 # Internal utils ---------------------------------------------------------
 
 
@@ -487,14 +622,45 @@ write_and_open = function(doc, docx.file){
 #' Replace every string containing a reference to a table/figure by the 
 #' docx-formatted cross-reference
 #' 
-#' @importFrom stringr str_detect str_match_all
+#' @importFrom stringr str_split str_detect str_match str_extract_all
 #' @importFrom glue glue
-#' @importFrom rlang abort
-#' @importFrom officer slip_in_text slip_in_seqfield
+#' @importFrom utils packageVersion
+#' @importFrom purrr map
+#' @importFrom officer run_word_field ftext body_add_fpar
 #' 
 #' @keywords internal
 #' @noRd
 parse_reference = function(doc, value){
+    if(packageVersion("officer")<"0.4"){
+        return(parse_reference_legacy(doc, value))
+    }
+    par_not_ref = str_split(value, "\\\\@ref\\(.*?\\)")[[1]]
+    par_ref = stringr::str_extract_all(value, "\\\\@ref\\(.*?\\)")[[1]]
+    #altern: https://stackoverflow.com/a/43876294/3888000
+    altern = c(par_not_ref, par_ref)[order(c(seq_along(par_not_ref)*2 - 1, seq_along(par_ref)*2))] 
+    
+    par_list = map(altern, ~{
+        if(str_detect(.x, "\\\\@ref")){
+            bkm = stringr::str_match(.x, "\\\\@ref\\((.*?)\\)")[,2]
+            run_word_field(glue(' REF {bkm} \\h '))
+        } else {
+            ftext(.x)
+        }
+    })
+    
+    p=do.call(fpar, args=par_list)
+    body_add_fpar(doc, p)
+}
+
+# nocov start
+
+#' @importFrom stringr str_detect str_match_all
+#' @importFrom glue glue
+#' @importFrom rlang abort
+#' @importFrom officer slip_in_text slip_in_seqfield
+#' @keywords internal
+#' @noRd
+parse_reference_legacy = function(doc, value){
     normal_style_character = getOption('crosstable_style_character', doc$default_styles$character)
     
     if(!str_detect(value, "\\\\@ref\\((.*?)\\)")){ #recursion out
@@ -514,3 +680,5 @@ parse_reference = function(doc, value){
                          style=normal_style_character, pos='after') %>%
         parse_reference(x[3])
 }
+
+# nocov end

@@ -1,4 +1,3 @@
-options(crosstable_verbosity_autotesting="quiet")
 
 
 # By numeric --------------------------------------------------
@@ -52,6 +51,7 @@ test_that("difftime is OK: ", {
 test_that("by factor if numeric <= 3 levels", {
   x10=crosstable(mtcars, cyl, by=vs, total="both", margin="all")
   x10 %>% as_flextable()
+  x10 = as.data.frame(x10)
   expect_identical(x10[3,4], "14 (43.75% / 100.00% / 77.78%)")
   expect_equal(dim(x10), c(4,6))
   expect_equal(sum(is.na(x10)), 0)
@@ -134,6 +134,8 @@ test_that("numeric+factor+surv by factor: margin", {
   x6=crosstable(mtcars3, c(am,mpg,cyl,surv), by=vs, total="both", times=c(0,100,200,400), followup=TRUE)
   x7=crosstable(mtcars3, c(am,mpg,cyl,surv), by=vs, total="both", margin="row", times=c(0,100,200,400))
   x7 %>% as_flextable()
+  x6 = as.data.frame(x6)
+  x7 = as.data.frame(x7)
   expect_identical(x7[1:3,], x6[1:3,])
   expect_identical(x7[4:7,], x6[4:7,])
   expect_identical(x7[8,4], "7 (87.50%)")
@@ -142,6 +144,7 @@ test_that("numeric+factor+surv by factor: margin", {
 
   x8=crosstable(mtcars3, c(am,mpg,cyl,surv), by=vs, total="both", margin="col", times=c(0,100,200,400))
   x8 %>% as_flextable()
+  x8 = as.data.frame(x8)
   expect_false(identical(x8[5:8,], x6[5:8,]))
   expect_identical(x8[8,4], "7 (100.00%)")
   expect_equal(dim(x8), c(17,7))
@@ -149,6 +152,7 @@ test_that("numeric+factor+surv by factor: margin", {
 
   x9=crosstable(mtcars3, c(am,mpg,cyl,surv), by=vs, total="both", margin="all", times=c(0,100,200,400))
   x9 %>% as_flextable()
+  x9 = as.data.frame(x9)
   expect_false(identical(x9[5:8,], x6[5:8,]))
   expect_identical(x9[8,4], "7 (35.00% / 87.50% / 100.00%)")
   expect_equal(dim(x9), c(17,7))
@@ -156,6 +160,7 @@ test_that("numeric+factor+surv by factor: margin", {
 
   x92=crosstable(mtcars3, c(am,mpg,cyl,surv), by=vs, total="both", margin="none", times=c(0,100,200,400))
   x92 %>% as_flextable()
+  x92 = as.data.frame(x92)
   expect_false(identical(x92[5:8,], x6[5:8,]))
   expect_identical(x92[8,4], "7")
   expect_equal(dim(x92), c(17,7))
@@ -164,6 +169,7 @@ test_that("numeric+factor+surv by factor: margin", {
   
   x93=crosstable(mtcars3, c(am,mpg,cyl,surv), by=vs, total="both", margin="none", times=c(0,100,200,400), label=FALSE)
   x93 %>% as_flextable()
+  x93 = as.data.frame(x93)
   expect_false(identical(x93[5:8,], x6[5:8,]))
   expect_identical(x93[8,4], "7")
   expect_equal(dim(x93), c(17,7))
@@ -185,6 +191,64 @@ test_that("numeric+factor+surv by dummy", {
 })
 
 
+# By multiple -------------------------------------------------------------
+
+test_that("By multiple OK", {
+  x1 = crosstable(mtcars3, c(mpg, gear), by=c(cyl, am, vs))
+  x1 %>% as_flextable()
+  expect_equal(dim(x1), c(7,27))
+  x2 = crosstable(mtcars3, c(mpg, gear), by=c(cyl, am, vs), showNA=FALSE)
+  x2 %>% as_flextable()
+  expect_equal(dim(x2), c(7,15))
+  x3 = crosstable(mtcars3, c(mpg, gear), by=c(cyl, am, vs), total=TRUE)
+  x3 %>% as_flextable()
+  expect_equal(dim(x3), c(8,28))
+  x4 = crosstable(mtcars3, c(mpg, vs, cyl), by=c(am, dummy))
+  x4 %>% as_flextable()
+  expect_equal(dim(x4), c(11,5))
+  
+  x5 = crosstable(mtcars3, c(mpg, vs, cyl, dummy, surv, hp_date, qsec_posix, diff, cyl3), 
+                  by=c(am, gear),
+                  total=TRUE, times=c(100,200), followup=TRUE)
+  x5 %>% as_flextable()
+  expect_equal(dim(x5), c(34,10))
+})
+
+test_that("By multiple formula interface", {
+  x1 = crosstable(mtcars3, mpg+gear~cyl+I(am=="auto")+vs, total=TRUE)
+  x1 %>% as_flextable()
+  expect_equal(dim(x1), c(8,28))
+  
+})
+
+
+test_that("By multiple warnings", {
+  x1 = crosstable(mtcars3, c(mpg, gear, cyl), by=c(am, diff, qsec_posix, hp_date)) %>% 
+    # expect_equal(dim(.), c(11,5)) %>% 
+    expect_warning2(class="crosstable_multiby_wrong_class_warning")
+  attr(x1, "obj") %>% dim() %>% expect_equal(c(11,5))
+  
+  x2 = crosstable(mtcars3, c(mpg, gear, cyl), by=c(am, dummy_na, dummy_na2)) %>% 
+    expect_warning2(class="crosstable_multiby_some_missing_warning")
+  attr(x2, "obj") %>% dim() %>% expect_equal(c(11,5))
+  
+  crosstable(mtcars3, c(mpg, gear, cyl), by=c(am, vs), test=TRUE) %>% 
+    expect_warning(class="crosstable_multiby_test_warning")
+  crosstable(mtcars3, c(mpg, gear, cyl), by=c(am, vs), effect=TRUE) %>% 
+    expect_warning(class="crosstable_multiby_effect_warning")
+})
+
+test_that("By multiple errors", {
+  #All `by` columns have unsupported classes and were removed
+  crosstable(mtcars3, c(mpg, gear, disp, carb, am), 
+                  by=c(hp, surv, diff, qsec_posix, hp_date)) %>% 
+    expect_error(class="crosstable_multiby_wrong_class_error")
+  
+  #All `by` columns have missing values only
+  crosstable(mtcars3, c(mpg, gear, cyl), by=c(dummy_na, dummy_na2)) %>% 
+    expect_error(class="crosstable_by_only_missing_error")
+})
+
 
 # Functions ---------------------------------------------------------------
 test_that("Functions work", {
@@ -200,7 +264,8 @@ test_that("Function arguments work", {
   x = crosstable(mtcars3, c(disp, hp, am), by=vs, funs=c(meansd, quantile),
                  funs_arg = list(dig=3, probs=c(0.25,0.75)),
                  total=T, showNA="always")
-  ft =  as_flextable(x)
+  ft = as_flextable(x)
+  x = as.data.frame(x)
   expect_snapshot(x)
   expect_snapshot(ft)
 })
@@ -220,13 +285,43 @@ test_that("One function", {
     crosstable(iris2, c(Sepal.Length, Sepal.Width), funs=mean),
     crosstable(iris2, c(Sepal.Length, Sepal.Width), funs="mean"),
     crosstable(iris2, c(Sepal.Length, Sepal.Width), funs=c("My mean" = mean)),
-    crosstable(iris2, c(Sepal.Length, Sepal.Width), funs=c("My mean" = ~mean(.x, na.rm=TRUE))),
     crosstable(iris2, c(Sepal.Length, Sepal.Width), funs=cross_summary),
     crosstable(iris2, c(Sepal.Length, Sepal.Width), funs=c(" " = cross_summary)),
     crosstable(iris2, c(Sepal.Length, Sepal.Width), funs=list(" " = cross_summary)),
-    crosstable(iris2, c(Sepal.Length, Sepal.Width), 
-               funs=c("cross_summary1" = cross_summary, "bar2" = bar))
-  )
+    crosstable(iris2, c(Sepal.Length, Sepal.Width), funs=c("first"=function(xx){xx[1]})),
+    crosstable(iris2, c(Sepal.Length, Sepal.Width), funs=c("first"=~.x[1]))
+  ) %>% map(as.data.frame)
+  expect_snapshot(cross_list, error=FALSE)
+
+  expect_warning(crosstable(iris2, c(Sepal.Length, Sepal.Width),
+                            funs=function(y) mean(y, na.rm=TRUE)),
+                 class="crosstable_unnamed_anonymous_warning")
+  expect_warning(crosstable(iris2, c(Sepal.Length, Sepal.Width),
+                            funs=~mean(.x, na.rm=TRUE)),
+                 class="crosstable_unnamed_lambda_warning")
+})
+
+test_that("One function by", {
+  bar=function(x, dig=1, ...) {
+    return(c("MinMax" = minmax(x, dig=dig, ...), "N_NA" = nna(x)))
+  }
+  bar2=function(x, dig=1, ...) {
+    return(c(minmax(x, dig=dig, ...), "N_NA"=nna(x)))
+  }
+  bar3=function(x, dig=1, ...) {
+    return(c(minmax(x, dig=dig, ...), nna(x)))
+  }
+  
+  cross_list = list(
+    crosstable(iris2, c(Sepal.Length, Sepal.Width), by=Species, funs=mean),
+    crosstable(iris2, c(Sepal.Length, Sepal.Width), by=Species, funs="mean"),
+    crosstable(iris2, c(Sepal.Length, Sepal.Width), by=Species, funs=c("My mean" = mean)),
+    crosstable(iris2, c(Sepal.Length, Sepal.Width), by=Species, funs=cross_summary),
+    crosstable(iris2, c(Sepal.Length, Sepal.Width), by=Species, funs=c(" " = cross_summary)),
+    crosstable(iris2, c(Sepal.Length, Sepal.Width), by=Species, funs=list(" " = cross_summary)),
+    crosstable(iris2, c(Sepal.Length, Sepal.Width), by=Species, funs=c("first"=function(xx){xx[1]})),
+    crosstable(iris2, c(Sepal.Length, Sepal.Width), by=Species, funs=c("first"=~.x[1]))
+  ) %>% map(as.data.frame)
   expect_snapshot(cross_list, error=FALSE)
 
   expect_warning(crosstable(iris2, c(Sepal.Length, Sepal.Width),
@@ -241,309 +336,79 @@ test_that("One function", {
 test_that("Multiple functions", {
   #avec un seul nom
   x1 = crosstable(iris2, c(Sepal.Length, Sepal.Width), 
-                 funs=c(var, "meannnn"=mean))
+                  funs=c(var, "meannnn"=mean))
   expect_setequal(x1$variable, c("var", "meannnn"))
   
   #avec tous les noms quand il en faut
   x2 = crosstable(iris2, c(Sepal.Length, Sepal.Width),
-             funs=c(
-               "moy_lambda"=~mean(.x, na.rm=TRUE), 
-               "moy_fn"=function(.x){mean(.x, na.rm=TRUE)}, 
-               var, 
-               "moyenne"=mean
-             ))
+                  funs=c(
+                    "moy_lambda"=~mean(.x, na.rm=TRUE), 
+                    "moy_fn"=function(.x){mean(.x, na.rm=TRUE)}, 
+                    var, 
+                    "cross_summary1" = cross_summary
+                  ))
   
   expect_setequal(x2$variable, 
-                  c("moy_lambda", "moy_fn", "var", "moyenne"))
+                  c("moy_lambda", "moy_fn", "var", 
+                    paste("cross_summary1", names(cross_summary(1))))
+  )
   
   #avec un seul nom
   x3 = crosstable(iris2, c(Sepal.Length, Sepal.Width),
-             funs=c(
-               ~mean(.x, na.rm=TRUE), 
-               function(.x){
-                 .x=.x+1
-                 mean(.x, na.rm=TRUE)
-               }, 
-               var, 
-               "moyenne"=mean
-             )) %>% 
-    expect_warning(class="crosstable_unnamed_anonymous_warning") %>% 
-    expect_warning(class="crosstable_unnamed_lambda_warning")
+                  funs=c(
+                    ~mean(.x, na.rm=TRUE), 
+                    function(.x){
+                      .x=.x+1
+                      mean(.x, na.rm=TRUE)
+                    }, 
+                    var, 
+                    "moyenne"=mean
+                  )) %>% 
+    expect_warning2(class="crosstable_unnamed_anonymous_warning") %>% 
+    expect_warning2(class="crosstable_unnamed_lambda_warning")
   
-  expect_setequal(x3$variable, 
+  expect_setequal(attr(x3, "obj")$variable, 
                   c("~mean(.x, na.rm = TRUE)", 
                     "function(.x){.x = .x + 1...}", 
                     "var", "moyenne"))
   
-
+  
   #sans noms
   x4 = crosstable(iris2, c(Sepal.Length, Sepal.Width),
-             funs=c(
-               ~mean(.x, na.rm=TRUE), 
-               function(.x){mean(.x, na.rm=TRUE)}, 
-               var, 
-               mean
-             )) %>% 
-    expect_warning(class="crosstable_unnamed_anonymous_warning") %>% 
-    expect_warning(class="crosstable_unnamed_lambda_warning")
+                  funs=c(
+                    ~mean(.x, na.rm=TRUE), 
+                    function(.x){mean(.x, na.rm=TRUE)}, 
+                    var, 
+                    mean
+                  )) %>% 
+    expect_warning2(class="crosstable_unnamed_anonymous_warning") %>% 
+    expect_warning2(class="crosstable_unnamed_lambda_warning")
   
-  expect_setequal(x4$variable, 
+  expect_setequal(attr(x4, "obj")$variable, 
                   c("~mean(.x, na.rm = TRUE)", 
                     "function(.x){mean(.x, na.rm = TRUE)}", 
                     "var", "mean"))
 })
 
 
-test_that("Summary functions", {
+test_that("Special summary functions", {
   #date
-  ct = crosstable(mtcars2, hp_date, date_format="%d/%m/%Y")
+  ct = crosstable(mtcars2, hp_date, date_format="%d/%m/%Y") %>% as.data.frame()
   expect_equal(ct[1,4], "22/02/2010 - 02/12/2010")
   
   #only_round
   x = mtcars2 %>% dplyr::transmute(mpg=mpg/100000)
-  withr::local_options(crosstable_only_round=NULL)
-  ct = crosstable(x, funs_arg=list(dig=2, zero_digits=5))
+  rlang::local_options(crosstable_only_round=NULL)
+  ct = crosstable(x, funs_arg=list(dig=2, zero_digits=5)) %>% as.data.frame()
   expect_equal(ct[1,4], "0.000104 / 0.000339")
-  withr::local_options(crosstable_only_round=TRUE)
-  ct = crosstable(x, funs_arg=list(dig=2, zero_digits=5))
+  rlang::local_options(crosstable_only_round=TRUE)
+  ct = crosstable(x, funs_arg=list(dig=2, zero_digits=5)) %>% as.data.frame()
   expect_equal(ct[1,4], "0 / 0")
 })
 
 
+# Warnings ----------------------------------------------------------------
 
-
-# Statistical Tests --------------------------------------------------
-
-test_that("Statistical Tests", {
-  # testthat::skip_on_cran()
-  set.seed(0)
-  dummy_data = tibble(x_norm=rnorm(50,0,20), x_exp=rexp(50,60), y=rnorm(50,0,20), tmt2=rep(c("A","B"), 25), tmt3=LETTERS[1:3][sample(3,50,replace=TRUE)])
-
-  ##CATEGORICAL
-
-  # Fisher
-  x=crosstable(mtcars3, cyl, by=vs, test=T)
-  expect_equal(x$test[1], "p value: 0.0001 \n(Fisher's Exact Test for Count Data)")
-  # Chi Square
-  x=crosstable(iris, I(Species == "versicolor")~I(Species == "setosa"), test=T)
-  expect_equal(x$test[1], "p value: <0.0001 \n(Pearson's Chi-squared test)")
-
-
-  ##NUMERIC
-
-  # wilcox (exact=F)
-  x=crosstable(mtcars3, disp, by=vs, test=T)
-  expect_equal(x$test[1], "p value: 0.0002 \n(Wilcoxon rank sum test)")
-  # wilcox (exact=T)
-  if(package_version(R.version) >= package_version("4.0")) {
-    x=crosstable(dummy_data, x_exp, by=tmt2, test=T)
-    expect_equal(x$test[1], "p value: 0.4185 \n(Wilcoxon rank sum exact test)")
-  } else {
-    x=crosstable(dummy_data, x_exp, by=tmt2, test=T)
-    expect_equal(x$test[1], "p value: 0.4185 \n(Wilcoxon rank sum test)")
-  }
-  # t.equalvar
-  x = crosstable(mtcars3, mpg, by=vs, test=T)
-  expect_equal(x$test[1], "p value: <0.0001 \n(Two Sample t-test)")
-  # t.unequalvar
-  x=crosstable(mtcars3, hp, by=vs, test=T)
-  expect_equal(x$test[1], "p value: <0.0001 \n(Welch Two Sample t-test)")
-  # a.unequalvar
-  x=crosstable(mtcars3, mpg, by=cyl, test=T)
-  expect_equal(x$test[1], "p value: <0.0001 \n(One-way analysis of means (not assuming equal variances))")
-  # a.equalvar
-  x=crosstable(dummy_data, x_norm, by=tmt3, test=T)
-  expect_equal(x$test[1], "p value: 0.1626 \n(One-way analysis of means)")
-  # kruskal
-  x=crosstable(mtcars3, drat, by=cyl, test=T)
-  expect_equal(x$test[1], "p value: 0.0017 \n(Kruskal-Wallis rank sum test)")
-
-
-  ##CORRELATION
-
-  #Pearson
-  x=crosstable(mtcars3, mpg, by=disp, cor_method="pearson", test=T)
-  expect_equal(x$test[1], "p value: <0.0001 \n(Pearson's product-moment correlation)")
-  #Kendall normal
-  x=crosstable(mtcars3, mpg, by=disp, cor_method="kendall", test=T)
-  expect_equal(x$test[1], "p value: <0.0001 \n(Kendall's rank correlation tau, normal approximation)")
-  #Kendall exact
-  x=crosstable(iris, Petal.Length, by=Sepal.Length, cor_method="kendall", test=T)
-  expect_equal(x$test[1], "p value: <0.0001 \n(Kendall's rank correlation tau, exact test)")
-  #Spearman normal
-  x=crosstable(mtcars3, mpg, by=disp, cor_method="spearman", test=T)
-  expect_equal(x$test[1], "p value: <0.0001 \n(Spearman's rank correlation rho, normal approximation)")
-  #Spearman exact
-  x=crosstable(dummy_data, x_exp, by=y, cor_method="spearman", test=T)
-  expect_equal(x$test[1], "p value: 0.1860 \n(Spearman's rank correlation rho, exact test)")
-
-
-  ##SURVIVAL
-
-  #Logrank
-  x=crosstable(mtcars3, surv, by=am, test=T)
-  expect_equal(x$test[1], "p value: <0.0001 \n(Logrank test)")
-})
-
-
-
-test_that("Linear contrasts test)", {
-  my_test_args=crosstable_test_args()
-  my_test_args$test_summarize = test_summarize_linear_contrasts
-  x=iris %>%
-    mutate(Petal.Width.qt = paste0("Q", ntile(Petal.Width, 5)) %>% ordered()) %>%
-    crosstable(Petal.Length ~ Petal.Width.qt, test=TRUE, test_args = my_test_args)
-  expect_equal(x$test[1], "p value: <0.0001 \n(Contrast test for linear trend)")
-  expect_equal(dim(x), c(4,9))
-  expect_equal(sum(is.na(x)), 0)
-})
-
-test_that("'Test' can be a variable name", {
-  x=crosstable(mtcars3, test, by=vs, test=TRUE)
-  expect_equal(x$.id[1], "test")
-  expect_equal(dim(x), c(2,7))
-})
-
-
-test_that("Testing everything", {
-  set.seed(1234)
-  x = crosstable(mtcars3, disp+hp+am+surv~vs, margin="all", total="both",
-                 times=c(0,100,200,400), followup=TRUE, funs_arg = list(dig=9),
-                 test=T, effect=T) %>% 
-    expect_warning(class="crosstable_effect_warning")
-  ft = as_flextable(x)
-  
-  expect_snapshot(x)
-  expect_snapshot(ft)
-})
-
-
-
-# Effects --------------------------------------------------
-
-test_that("Effects: categorical variables", {
-  set.seed(0)
-  args = crosstable_effect_args()
-  
-  #args$effect_tabular = effect_odds_ratio (default)
-  x=crosstable(mtcars3, am, by=vs, effect=T, effect_args=args)
-  expect_equal(x$effect[1], "Odds ratio (Wald CI) (auto, vshaped vs straight): 5.25\n95%CI [0.80 to 34.43]")
-
-  args$effect_tabular = effect_relative_risk
-  x=crosstable(mtcars3, am, by=vs, effect=T, effect_args=args)
-  expect_equal(x$effect[1], "Relative risk (Wald CI) (auto, vshaped vs straight): 2.70\n95%CI [0.94 to 15.21]")
-  
-  args$effect_tabular = effect_risk_difference
-  x=crosstable(mtcars3, am, by=vs, effect=T, effect_args=args)
-  expect_equal(x$effect[1], "Risk difference (Wald CI) (auto, vshaped minus straight): 165.82\n95%CI [-10.51 to 379.13]")
-  
-})
-
-test_that("Effects: numeric variables", {
-  set.seed(0)
-  args = crosstable_effect_args()
-  
-  #args$effect_summarize = diff_mean_auto (default)
-  set.seed(1234)
-  x=crosstable(mtcars3, disp, by=vs, effect=T, effect_args=args)
-  expect_equal(x$effect[1], "Difference in means (bootstrap CI) (straight minus vshaped): -190.34\n95%CI [-260.78 to -119.89]")
-
-  set.seed(1234)
-  args$effect_summarize = diff_mean_boot
-  x=crosstable(mtcars3, disp, by=vs, effect=T, effect_args=args)
-  expect_equal(x$effect[1], "Difference in means (bootstrap CI) (straight minus vshaped): -190.34\n95%CI [-260.78 to -119.89]")
-
-  set.seed(1234)
-  args$effect_summarize = diff_median
-  x=crosstable(mtcars3, disp, by=vs, effect=T, effect_args=args)
-  expect_equal(x$effect[1], "Difference in medians (bootstrap CI) (): -208.90\n95%CI [-293.18 to -124.62]")
-
-  
-  
-})
-
-test_that("Effects: survival variables", {
-  set.seed(0)
-  args = crosstable_effect_args()
-  
-  x=crosstable(mtcars3, surv, by=cyl3, effect=T, effect_args=args)
-  expect_equal(x$effect[1], "Hazard ratio (Wald CI) (NA vs FALSE): 1.54\n95%CI [0.42 to 5.63]")
-})
-
-
-
-test_that("Effects never fail 1", {
-  args = crosstable_effect_args()
-  can_be_by = function(x) !is.Surv(x) && !is.date(x) && !all(is.na(x)) && !inherits(x, "difftime")
-
-  names(mtcars3) %>% set_names() %>% map(~{
-    set.seed(1234)
-    if(!is_testing()) print(.x)
-    if(can_be_by(mtcars3[[.x]])) {
-      expect_snapshot({
-        print(.x)
-        crosstable(mtcars3, by=any_of(.x), effect=T, effect_args=args)$effect %>%
-          table %>% as.data.frame()
-      })
-    }
-    return(0)
-  })
-
-})
-
-test_that("Effects never fail 2", {
-  args = crosstable_effect_args()
-  args$effect_summarize = diff_mean_boot
-  args$effect_tabular = effect_relative_risk
-  can_be_by = function(x) !is.Surv(x) && !is.date(x) && !all(is.na(x)) && !inherits(x, "difftime")
-
-  names(mtcars3) %>% set_names() %>% map(~{
-    set.seed(1234)
-    if(!is_testing()) print(.x)
-    if(can_be_by(mtcars3[[.x]])) {
-      expect_snapshot({
-        print(.x)
-        crosstable(mtcars3, by=any_of(.x), effect=T, effect_args=args)$effect %>%
-          table %>% as.data.frame()
-      })
-    }
-    return(0)
-  })
-
-})
-
-test_that("Effects never fail 3", {
-  args = crosstable_effect_args()
-  args$effect_summarize = diff_median
-  args$effect_tabular = effect_risk_difference
-  can_be_by = function(x) !is.Surv(x) && !is.date(x) && !all(is.na(x)) && !inherits(x, "difftime")
-
-  names(mtcars3) %>% set_names() %>% map(~{
-    set.seed(1234)
-    if(!is_testing()) print(.x)
-    if(can_be_by(mtcars3[[.x]])) {
-      expect_snapshot({
-        print(.x)
-        crosstable(mtcars3, by=any_of(.x), effect=T, effect_args=args)$effect %>%
-          table %>% as.data.frame()
-      })
-    }
-    return(0)
-  })
-})
-
-
-
-
-
-# Warnings and Errors -----------------------------------------------------
-test_that("Warnings", {
-  ct_warns = function() { crosstable(mtcars3, by=vs, times=c(0,100,200,400), test=T, effect=T) }
-
-  w = capture_warnings(ct_warns())
-  expect_match(w, ".*Loglik converged before variable.*", all = FALSE)
-  expect_match(w, "Could not calculate crosstable effects for variables.*", all = FALSE)
-})
 
 test_that('contains both `NA` and "NA"', {
   x=mtcars3
@@ -552,6 +417,28 @@ test_that('contains both `NA` and "NA"', {
     expect_warning(class='crosstable_wrong_col_class_by_warning') %>% 
     expect_warning(class='crosstable_na_char_warning')
 })
+
+test_that('Duplicate columns are removed from `cols`', {
+  rlang::local_options(crosstable_verbose_duplicate_cols=TRUE)
+  crosstable(mtcars3, c(mpg, gear, am, vs), by=c(am, vs)) %>% 
+    expect_warning(class="crosstable_duplicate_cols_warning")
+})
+
+test_that('Total in rows when by is NULL', {
+  crosstable(mtcars2, c(mpg, wt), total="row") %>% 
+    expect_warning(class='crosstable_totalrow_bynull')
+  crosstable(mtcars2, mpg+wt~1, total="row") %>% 
+    expect_warning(class='crosstable_totalrow_bynull')
+})
+
+test_that("Deprecation: moystd", {
+  lifecycle::expect_deprecated(crosstable(mtcars2, disp, funs=moystd))
+})
+
+
+
+# Errors ------------------------------------------------------------------
+
 
 test_that("BY class check", {
   #no by survival
@@ -563,18 +450,15 @@ test_that("BY class check", {
                class="crosstable_wrong_byclass_error")
 })
 
+test_that("Functions should return scalar", {
+  crosstable(mtcars2, c(mpg, wt), by=am, funs=c("square"=function(xx){xx^2})) %>% 
+    expect_error(class="crosstable_summary_not_scalar")
+  crosstable(mtcars2, c(mpg, wt), by=am, funs=c(" "=function(xx){xx^2})) %>% 
+    expect_error(class="crosstable_summary_not_scalar")
+})
+
 test_that("Named ellipsis", {
   expect_error(crosstable(mtcars3, foo=vs),
-               class = "rlib_error_dots_named")
-})
-
-test_that("Auto-testing is bad and you should feel bad.", {
-  rlang::local_options(crosstable_verbosity_autotesting="verbose")
-  expect_warning(crosstable(mtcars2, disp, by=vs, funs=mean, test=T),
-                 class="crosstable_autotesting_warning")
-})
-
-test_that("Deprecation: moystd", {
-  lifecycle::expect_deprecated(crosstable(mtcars2, disp, funs=moystd))
+               class="rlib_error_dots_named")
 })
 
