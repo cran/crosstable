@@ -8,7 +8,8 @@
 #' @param autofit whether to use [flextable::autofit()] on the table
 #' @param compact whether to compact the table
 #' @param show_test_name in the `test` column, show the test name
-#' @param fontsizes font sizes as a list of keys \[body, subheaders, header\]. If set through arguments, all needed names should be mentioned.
+#' @param fontsizes font sizes as a list of keys `c(body, subheaders, header)`. If set through arguments instead of options, all 3 names should be specified.
+#' @param padding_v vertical padding (body)
 #' @param remove_header_keys if `TRUE` and `x` has several `by` strata, header will only display values
 #' @param generic_labels names of the crosstable default columns. Useful for translation for instance. 
 #' @param ... unused
@@ -58,6 +59,7 @@ as_flextable.crosstable = function(x, keep_id = FALSE, by_header = NULL,
                                        subheaders=getOption('crosstable_fontsize_subheaders', 11),
                                        header=getOption('crosstable_fontsize_header', 11)
                                    ), 
+                                   padding_v=getOption('crosstable_padding_v', NULL),
                                    remove_header_keys = FALSE,
                                    generic_labels=list(id = ".id", variable = "variable", value = "value", 
                                                        total="Total", label = "label", test = "test", 
@@ -73,12 +75,16 @@ as_flextable.crosstable = function(x, keep_id = FALSE, by_header = NULL,
     has_total = attr(x, "has_total")
     has_label = attr(x, "has_label")
     by_label = attr(x, "by_label")
-    by_levels = attr(x, "by_levels") %>% map(replace_na, "NA")
+    showNA = attr(x, "showNA")
+    by_levels = attr(x, "by_levels") %>% map(~{
+        if(showNA=="always") .x=unique(c(.x, NA))
+        replace_na(.x, replace="NA")
+    })
     by = attr(x, "by")
     has_by =  !is.null(by)
     if(has_by && is.null(by_label)) by_label=by
-    showNA = attr(x, "showNA")
-    if(showNA=="always") by_levels=c(by_levels, "NA")
+    # if(showNA=="always") by_levels=c(by_levels, "NA")
+    
     
     test=generic_labels$test
     id=generic_labels$id
@@ -104,7 +110,7 @@ as_flextable.crosstable = function(x, keep_id = FALSE, by_header = NULL,
             fontsize(size=fontsizes$body) %>%
             fontsize(i=title_rows, size=fontsizes$subheaders) %>%
             border(title_rows, border.top = fp_border()) %>%
-            bold(title_rows) %>% 
+            bold(title_rows, j=1:2) %>% 
             align(title_rows, align="left") %>% 
             padding(i=padded_rows, j=1, padding.left=getOption('crosstable_compact_padding', 25))
     } else {
@@ -172,6 +178,8 @@ as_flextable.crosstable = function(x, keep_id = FALSE, by_header = NULL,
         hline_bottom(border = border2, part = "head") %>% 
         border_inner_h(border = border1, part = "head") %>%
         fix_border_issues()
+    if(length(padding_v)!=0)
+        rtn = padding(rtn, padding.top=padding_v, padding.bottom=padding_v, part="body")
     
     if (autofit) {
         rtn = autofit(rtn)

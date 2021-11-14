@@ -64,7 +64,8 @@ crosstable(mtcars2, c(am, mpg), by=vs, total="both") %>%
 ## ----crosstable-categorical-----------------------------------------------------------------------
 mtcars3 = mtcars2
 mtcars3$cyl[1:5] = NA
-crosstable(mtcars3, c(am, cyl), by=vs, margin=c("column","row"), percent_digits=0, showNA="always") %>% 
+crosstable(mtcars3, c(am, cyl), by=vs, showNA="always", 
+           percent_digits=0, percent_pattern="{n} ({p_col}/{p_row})") %>% 
   as_flextable(keep_id=TRUE)
 
 ## ----crosstable-functions-------------------------------------------------------------------------
@@ -73,7 +74,7 @@ crosstable(mtcars2, c(mpg, wt), funs=c(median, mean, "std dev"=sd)) %>%
 
 ## ----crosstable-correlation-----------------------------------------------------------------------
 library(survival)
-crosstable(mtcars2, where(is.numeric), by=mpg) %>% 
+crosstable(mtcars2, where(is.numeric), cor_method="pearson", by=mpg) %>% 
   as_flextable(keep_id=TRUE)
 
 ## ----crosstable-survival--------------------------------------------------------------------------

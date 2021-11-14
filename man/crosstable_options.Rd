@@ -6,10 +6,16 @@
 \description{
 Here is a comprehensive list of all options that you can set globally.
 
+For setting \code{crosstable()} arguments globally:
+\itemize{
+\item \code{crosstable_total}, \code{crosstable_percent_pattern}, \code{crosstable_percent_digits}, \code{crosstable_showNA}, \code{crosstable_label}, \code{crosstable_funs}, \code{crosstable_funs_arg}, \code{crosstable_cor_method}, \code{crosstable_unique_numeric}, \code{crosstable_date_format}, \code{crosstable_times}, \code{crosstable_followup}, \code{crosstable_test_arg}, and \code{crosstable_effect_args}
+}
+
 For flextables:
 \itemize{
 \item \code{crosstable_autofit}, \code{crosstable_compact}, and \code{crosstable_show_test_name}: default arguments for \code{\link[=as_flextable]{as_flextable()}}.
 \item \code{crosstable_compact_padding}: left-padding for non-headers rows when \code{compact=TRUE}.
+\item \code{crosstable_padding_v}: vertical padding (body).
 \item \code{crosstable_fontsize_body}, \code{crosstable_fontsize_header}, and \code{crosstable_fontsize_subheaders}: font sizes for, respectively for normal, header and subheader rows. Subheaders are only considered when \code{compact=TRUE}.
 \item \code{crosstable_wrap_id}: if \code{id} contains no spaces, wrap it with this maximum number of characters.
 }

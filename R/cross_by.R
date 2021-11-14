@@ -4,7 +4,7 @@
 #' @importFrom glue glue glue_data glue_collapse
 #' @keywords internal
 #' @noRd
-cross_by = function(data_x, data_y, funs, funs_arg, margin, total, percent_digits, 
+cross_by = function(data_x, data_y, funs, funs_arg, percent_pattern, total, percent_digits, 
                     showNA, label, test, times, followup, 
                     test_args, cor_method, effect, effect_args){
     if(!is.null(data_y) && ncol(data_y)>1) abort(glue("data_y has {ncol(data_y)} columns (max=1)"))
@@ -57,7 +57,7 @@ cross_by = function(data_x, data_y, funs, funs_arg, margin, total, percent_digit
                               cor_digits=percent_digits, cor_method=cor_method,
                               test=test, test_args=test_args, effect=effect, effect_args=effect_args)
         } else if(is.character.or.factor(.x)){
-            rtn=cross_categorical(data_x[.y], data_y, margin=margin,
+            rtn=cross_categorical(data_x[.y], data_y, percent_pattern=percent_pattern,
                                   showNA=showNA, total=total, label=label, percent_digits=percent_digits,
                                   test=test, test_args=test_args, effect=effect, effect_args=effect_args)
         } else if(is.Surv(.x)){
@@ -103,51 +103,4 @@ cross_by = function(data_x, data_y, funs, funs_arg, margin, total, percent_digit
     rownames(rtn_tbl)=NULL
     return(rtn_tbl)
 }
-
-
-
-#NO GIT
-#' @importFrom dplyr rename_with
-#' @keywords internal
-#' @noRd
-cross_by_multiple = function(data_x, data_y, funs, funs_arg, margin, total, percent_digits, 
-                    showNA, label, test, times, followup, 
-                    test_args, cor_method, effect, effect_args){
-    .SEPARATOR = "_!_"
-    data_x2 = split(data_x, data_y[-1], sep=.SEPARATOR) %>%
-        map(copy_label_from, from=data_x)
-    data_y2 = split(data_y[1], data_y[-1], sep=.SEPARATOR) %>%
-        map(copy_label_from, from=data_y[1])
-
-    rtn2 = map2(data_x2, data_y2, function(a, b) {
-        cross_by(data_x=a, data_y=b, funs=funs, funs_arg=funs_arg,
-                 margin=margin, total=total[total!=1], percent_digits=percent_digits, showNA=showNA,
-                 cor_method=cor_method, times=times, followup=followup, test=F, test_args=test_args,
-                 effect=F, effect_args=effect_args, label=label)
-
-    })
-
-    rtn3 = rtn2 %>% imap(function(x, .name){
-        strat_names=names(data_y)[-1]
-        strat_values=.name %>% str_split(.SEPARATOR) %>% unlist()
-        strat = paste0(strat_names, "=", strat_values) %>% paste(collapse=" & ")
-        x %>% rename_with(function(col) paste0(names(data_y)[1], "=", col, " & ", strat),
-                           .cols=-(1:3))
-    })
-
-    rtn = rtn3 %>% reduce(left_join, by=c(".id", "label", "variable"), suffix=c("", "$error$"))
-
-    if(1 %in% total){
-        x = cross_by(data_x=data_x, data_y=NULL, funs=funs, funs_arg=funs_arg,
-                     margin=margin, total=total, percent_digits=percent_digits, showNA=showNA,
-                     cor_method=cor_method, times=times, followup=followup, test=test, test_args=test_args,
-                     effect=effect, effect_args=effect_args, label=label)
-        rtn$Total = x$value
-    }
-    stopifnot(!names(rtn) %>% str_detect("$error$") %>% any())
-    rtn
-}
-#/NO GIT
-
-
 

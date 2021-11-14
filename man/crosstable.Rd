@@ -2,6 +2,7 @@
 % Please edit documentation in R/crosstable.R
 \name{crosstable}
 \alias{crosstable}
+\alias{is.crosstable}
 \title{Easily describe datasets}
 \usage{
 crosstable(
@@ -10,7 +11,7 @@ crosstable(
   ...,
   by = NULL,
   total = c("none", "row", "column", "both"),
-  margin = c("row", "column", "cell", "none", "all"),
+  percent_pattern = "{n} ({p_row})",
   percent_digits = 2,
   showNA = c("ifany", "always", "no"),
   label = TRUE,
@@ -25,60 +26,73 @@ crosstable(
   test_args = crosstable_test_args(),
   effect = FALSE,
   effect_args = crosstable_effect_args(),
+  margin = c("row", "column", "cell", "none", "all"),
   .vars
 )
+
+is.crosstable(x)
 }
 \arguments{
-\item{data}{a data.frame}
+\item{data}{A data.frame}
 
-\item{cols}{the variables to describe. Can be a character or name vector, a tidyselect helper, a (lambda) function that returns a logical, or a formula. See examples or \code{vignette("crosstable-selection")} for more details.}
+\item{cols}{The variables to describe. Can be a character or name vector, a tidyselect helper, a (lambda) function that returns a logical, or a formula. See examples or \code{vignette("crosstable-selection")} for more details.}
 
-\item{...}{more variables to describe. Cannot be a lambda function nor a formula.}
+\item{...}{Unused. All parameters after this one must be named.}
 
-\item{by}{the variable to group on. Character or name.}
+\item{by}{The variable to group on. Character or name.}
 
 \item{total}{one of ["none", "row", "column" or "both"] to indicate whether to add total rows and/or columns. Default to \code{none}.}
 
-\item{margin}{one of ["row", "column", "cell", "none" or "all"] to indicate which proportions should be computed in frequency tables. Default to \code{row}.}
+\item{percent_pattern}{Pattern used to describe proportions in categorical data. Syntax uses a \code{\link[glue:glue]{glue::glue()}} specification, see section below for more details. Default to \code{"{n} ({p_col})"} if \code{by} is null and \code{"{n} ({p_row})"} if it is not.}
 
-\item{percent_digits}{number of digits for percentages}
+\item{percent_digits}{Number of digits for percentages}
 
-\item{showNA}{whether to show NA in categorical variables (one of \code{c("ifany", "always", "no")}, like in \code{table()})}
+\item{showNA}{Whether to show NA in categorical variables (one of \code{c("ifany", "always", "no")}, like in \code{table()})}
 
-\item{label}{whether to show labels. See \link{import_labels} or \link{set_label}for how to add labels to the dataset columns.}
+\item{label}{Whether to show labels. See \code{\link[=import_labels]{import_labels()}} or \code{\link[=set_label]{set_label()}}for how to add labels to the dataset columns.}
 
-\item{funs}{functions to apply to numeric variables. Default to \link{cross_summary}.}
+\item{funs}{Functions to apply to numeric variables. Default to \code{\link[=cross_summary]{cross_summary()}}.}
 
-\item{funs_arg}{additional parameters for \code{funs}, e.g. \code{digits} (the number of decimal places) for the default \link{cross_summary}. Ultimately, these arguments are passed to \link{format_fixed}.}
+\item{funs_arg}{Additional parameters for \code{funs}, e.g. \code{digits} (the number of decimal places) for the default \code{\link[=cross_summary]{cross_summary()}}. Ultimately, these arguments are passed to \code{\link[=format_fixed]{format_fixed()}}.}
 
-\item{cor_method}{one of ["pearson", "kendall", or "spearman"] to indicate which correlation coefficient is to be used.}
+\item{cor_method}{One of \code{c("pearson", "kendall", "spearman")} to indicate which correlation coefficient is to be used.}
 
-\item{unique_numeric}{the number of non-missing different levels a variable should have to be considered as numeric}
+\item{unique_numeric}{The number of non-missing different levels a variable should have to be considered as numeric}
 
 \item{date_format}{if \code{x} is a vector of Date or POSIXt, the format to apply (see \link{strptime} for formats)}
 
-\item{times}{when using formula with \code{\link[survival:Surv]{survival::Surv()}} objects, which times to summarize}
+\item{times}{When using formula with \code{\link[survival:Surv]{survival::Surv()}} objects, which times to summarize}
 
-\item{followup}{when using formula with \code{\link[survival:Surv]{survival::Surv()}} objects, whether to display follow-up time}
+\item{followup}{When using formula with \code{\link[survival:Surv]{survival::Surv()}} objects, whether to display follow-up time}
 
-\item{test}{whether to perform tests}
+\item{test}{Whether to perform tests}
 
 \item{test_args}{See \code{\link{crosstable_test_args}} to override default testing behaviour.}
 
-\item{effect}{whether to compute a effect measure}
+\item{effect}{Whether to compute a effect measure}
 
 \item{effect_args}{See \code{\link{crosstable_effect_args}} to override default behaviour.}
 
-\item{.vars}{deprecated}
+\item{margin}{Deprecated in favor of \code{percent_pattern}. One of ["row", "column", "cell", "none", or "all"]. Default to \code{row}.}
+
+\item{.vars}{Deprecated}
+
+\item{x}{a numeric vector to format}
 }
 \value{
-A \code{data.frame} of class \code{crosstable}
+A \code{data.frame}/\code{tibble} of class \code{crosstable}
 }
 \description{
 Generate a descriptive table of all chosen columns, as contingency tables for categorical variables and as calculation summaries for numeric variables. If the \code{by} argument points to one or several categorical variables, \code{crosstable} will output a description of all columns for each level. Otherwise, if it points to a numeric variable, \code{crosstable} will calculate correlation coefficients with all other selected numeric columns. Finally, if it points to a \code{Surv} object, \code{crosstable} will describe the survival at different times.\cr
 \cr
 Can be formatted as an HTML table using \code{\link[=as_flextable]{as_flextable()}}.
 }
+\section{\code{percent_pattern}}{
+
+The \code{percent_pattern} argument is a single string that uses the glue syntax, where variables are put in double curly braces (\code{{{x}}}). Count is expressed as \code{{{n}}} and proportions as \code{{{p_row}}}, \code{{{p_col}}}, and \code{{{p_cell}}}, depending on which way they are calculated. \cr
+For each proportion, a confidence interval is also calculated using \href{https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval#Wilson_score_interval}{Wilson score} and can be expressed as \code{{{p_xxx_inf}}} and \code{{{p_xxx_sup}}}. See examples for practical applications.
+}
+
 \examples{
 #whole table
 crosstable(iris)
@@ -94,11 +108,11 @@ crosstable(mtcars2, c(ends_with("t"), starts_with("c")), by=vs,
 crosstable(mtcars2, c(disp, cyl), by=c(am, vs), 
            margin=c("row", "col"), total = "both")
 
-#predicate selection, correlation, testing
-crosstable(mtcars2, where(is.numeric), by=hp, test=TRUE)
+#predicate selection, correlation, effect calculation
+crosstable(mtcars2, where(is.numeric), by=hp, effect=TRUE)
 
-#lambda selection & effect calculation
-crosstable(mtcars2, ~is.numeric(.x) && mean(.x)>50, by=vs, effect=TRUE)
+#lambda selection & statistical tests
+crosstable(mtcars2, ~is.numeric(.x) && mean(.x)>50, by=vs, test=TRUE)
 
 #Dates
 mtcars2$my_date = as.Date(mtcars2$hp , origin="2010-01-01") \%>\% set_label("Some nonsense date")
@@ -107,6 +121,15 @@ crosstable(mtcars2, my_date, by=vs, date_format="\%d/\%m/\%Y")
 #Survival data (using formula syntax)
 library(survival)
 crosstable(aml, Surv(time, status) ~ x,times=c(0,15,30,150), followup=TRUE)
+
+#Patterns
+crosstable(mtcars2, vs, by=am, percent_digits=0, 
+           percent_pattern="{n} ({p_col} / {p_row})")
+crosstable(mtcars2, vs, by=am, percent_digits=0,
+           percent_pattern="N={n} \np[95\%CI] = {p_col} [{p_col_inf}; {p_col_sup}]")
+str_high="n>5"; str_lo="n<=5"
+crosstable(mtcars2, vs, by=am, percent_digits=0, 
+           percent_pattern="col={p_col}, row={p_row} ({ifelse(n<5, str_lo, str_high)})")
 }
 \seealso{
 https://danchaltiel.github.io/crosstable/, as_flextable, import_labels

@@ -263,6 +263,8 @@ test_that("Officers warnings and errors", {
 
 
 test_that("openxlsx is working", {
+    set.seed(1234)
+    
     #by=NULL
     x1=crosstable(mtcars2, c(mpg, vs, gear), total=T, test=T)
     wb1=as_workbook(x1, keep_id=FALSE)
@@ -281,8 +283,6 @@ test_that("openxlsx is working", {
     xl=list("with by"=x2, noby=x1, x3)
     wb6=as_workbook(xl)
     
-    expect_snapshot(wb6$worksheets)
-    
     if(!is_testing()){
         openxlsx::saveWorkbook(wb1, file = "tests/testthat/xlsx/test_openxlsx1.xlsx", overwrite = TRUE)
         openxlsx::saveWorkbook(wb2, file = "tests/testthat/xlsx/test_openxlsx2.xlsx", overwrite = TRUE)
@@ -290,7 +290,6 @@ test_that("openxlsx is working", {
         openxlsx::saveWorkbook(wb4, file = "tests/testthat/xlsx/test_openxlsx4.xlsx", overwrite = TRUE)
         openxlsx::saveWorkbook(wb5, file = "tests/testthat/xlsx/test_openxlsx5.xlsx", overwrite = TRUE)
         openxlsx::saveWorkbook(wb6, file = "tests/testthat/xlsx/test_openxlsx6.xlsx", overwrite = TRUE)
-        
     }
 })
 

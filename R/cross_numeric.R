@@ -150,7 +150,11 @@ summarize_numeric_factor = function(x, by, funs, funs_arg, showNA, total,
     # plot(xx)
     # tibble(by=xx$expr, time=xx$time)
     
+    # browser()
     #TODO option pour garder tous les niveaux de by ?
+    
+    
+    
     by(x[by_filter], by[by_filter], summarize_numeric_single, funs=funs, funs_arg=funs_arg) %>% 
         imap_dfr(~{
             if(is.null(.x)) .x=summarize_numeric_single(numeric(0), funs=funs, funs_arg=funs_arg)

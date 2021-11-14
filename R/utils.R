@@ -3,8 +3,7 @@ utils::globalVariables(".")
 
 # Error and warning handling ----------------------------------------------
 
-
-#' @author https://stackoverflow.com/a/20578779/3888000
+#' @source https://stackoverflow.com/a/20578779/3888000 
 #' @keywords internal
 #' @noRd
 #' @examples 
@@ -13,6 +12,8 @@ utils::globalVariables(".")
 #' x
 #' attributes(x)
 tryCatch2 = function(expr){
+    
+    # TODO purrr:::capture_output
     errors = list()
     warnings = list()
     messages = list()
@@ -93,14 +94,55 @@ assert_is_installed = function(pkg, fun) {
 }
 
 
+
+# Arguments name-check ----------------------------------------------------
+
+
+#' @importFrom rlang abort
+#' @importFrom glue glue glue_collapse
+#' @source mimick ellipsis::check_dots_unnamed
+#' @keywords internal
+#' @noRd
+check_dots_unnamed = function(){
+    dotnames = names(substitute(list(...), env=parent.frame()))
+    if(any(dotnames!="")){
+        named = dotnames[dotnames!=""] %>% glue_collapse("', '", last="', and '")
+        abort(c("Components of `...` should never have a name in crosstable().", 
+                x="Did you misspecify an argument?",
+                i=glue("Named components: '{named}'")), 
+              class="rlib_error_dots_named")
+    }
+}
+
+#' Get all unnamed arguments from the parent function
+#' @section Warning: this function will not work in a pipe.
+#' @source  https://stackoverflow.com/q/69644911/3888000
+#' @keywords internal
+#' @noRd
+unnamed_args = function(which=-1){
+    .call = sys.call(which)
+    f = get(as.character(.call[[1]]), mode="function", sys.frame(which-1))
+    mc = names(as.list(match.call(definition=f, call=.call))) #https://stackoverflow.com/a/17257053/3888000
+    sc = names(as.list(.call))
+    setdiff(mc, sc)
+}
+
+
 # Function handling --------------------------------------------------------
+
+#' @source methods::formalArgs
+#' @keywords internal
+#' @noRd
+formalArgs = function (def){
+    names(formals(def, envir = parent.frame()))
+}
 
 
 #' Used for defaulting S3 methods to loaded function
 #' @importFrom utils getAnywhere
 #' @keywords internal
 #' @noRd
-get_defined_function = function(name) {
+get_defined_function = function(name){
     # https://stackoverflow.com/a/60988796/3888000
     matches = getAnywhere(name)
     # Filter out invisible objects and duplicates
@@ -321,6 +363,38 @@ confint_numeric = function(object, level=0.95, B=0){
     rtn
 }
 
+#' Confidence interval of a vector of proportion
+#'
+#' @param p the proportion
+#' @param n the sample size
+#' @param i either -1 or +1
+#' @param level the confidence level required
+#' @source binom:::binom.confint
+#' @source https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval
+#' @note validé avec PropCIs::scoreci
+#' @keywords internal
+#' @noRd
+confint_proportion = function(p, n, 
+                              method=c("wilson", "asymptotic"),
+                              level=0.95){
+    a = 1-level
+    method = match.arg(method)
+    z = qnorm(1-a/2)
+    # browser()
+    if(method=="wilson"){
+        z2 = z * z
+        p1 = p + 0.5 * z2/n
+        p2 = z * sqrt((p * (1 - p) + 0.25 * z2/n)/n)
+        p3 = 1 + z2/n
+        lcl = (p1 - p2)/p3
+        ucl = (p1 + p2)/p3
+        rtn = data.frame(inf=lcl, sup=ucl)
+    } else if(method=="asymptotic"){
+        p1 = z*sqrt(p*(1-p)/n)
+        rtn = data.frame(inf=p-p1, sup=p+p1)
+    } 
+    return(rtn)
+}
 
 #' Return the number of non NA observations
 #'
@@ -366,6 +440,10 @@ str_wrap2 = function(x, width, ...){
 }
 
 
-# Check silencing ---------------------------------------------------------
+# dplyr -------------------------------------------------------------------
 
-utils::globalVariables("where")
+#' @source https://github.com/tidyverse/dplyr/issues/5563#issuecomment-721769342
+across_unpack = function(...) {
+    out = across(...)
+    tidyr::unpack(out, names(out), names_sep = "_")
+}

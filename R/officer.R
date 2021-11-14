@@ -35,13 +35,17 @@ body_add_crosstable = function (doc, x, body_fontsize=NULL,
                                 header_fontsize=ceiling(body_fontsize*1.2), 
                                 padding_v=NULL, ...) {
     assert_class(x, "crosstable", .var.name=vname(x))
+    
+    if(missing(padding_v)) padding_v = getOption("crosstable_padding_v", NULL)
+    if(missing(body_fontsize)) body_fontsize = getOption("crosstable_fontsize_body", NULL)
+    if(missing(header_fontsize)) header_fontsize = getOption("crosstable_fontsize_header", NULL)
     ft = as_flextable(x, ...)
     if(length(body_fontsize)!=0)
         ft = fontsize(ft, size = body_fontsize, part = "body")
     if(length(header_fontsize)!=0)
         ft = fontsize(ft, size = header_fontsize, part = "header")
     if(length(padding_v)!=0)
-        ft = padding(ft, padding.top=padding, padding.bottom=padding, part = "body")
+        ft = padding(ft, padding.top=padding_v, padding.bottom=padding_v, part = "body")
     
     body_add_flextable(doc, ft)
 }
@@ -92,7 +96,7 @@ body_add_normal = function(doc, ..., .sep="", squish=TRUE) {
     if(all(lengths==1)){ #one or several vectors of length 1
         value = glue(..., .sep=.sep, .envir=parent.frame())
         if(squish) value = str_squish(value)
-        if(str_detect(value, "\\\\@ref\\((.*?)\\)")){
+        if(length(value) > 0 && str_detect(value, "\\\\@ref\\((.*?)\\)")){
             # doc = body_add_par(doc, "") %>% parse_reference(value)
             doc = body_add_par(doc, "") %>% parse_reference(value)
         } else{
@@ -216,6 +220,91 @@ body_add_list_item = function(doc, value, ordered=FALSE, style=NULL, ...){
 
 
 
+#' Add a list of crosstables
+#' 
+#' Add a list of crosstables in an officer document
+#'
+#' @param doc a `rdocx` object, created by [officer::read_docx()]
+#' @param l a named list of tables. Plain dataframes will be converted to flextables.
+#' @param fun a function to be used before each table, most likely to add some kind of title. Should be of the form `function(doc, .name)` where `.name` is the name of the current crosstable of the list. You can also pass `"title2"` to add the name as a title of level 2 between each table, `"newline"` to simply add a new line, or even NULL to not separate them (beware that the table might merge then).
+#' @param ... arguments passed on to [body_add_crosstable()] or [body_add_flextable()]
+#'
+#' @importFrom checkmate assert_list assert_named assert_class assert_multi_class
+#' @importFrom rlang abort
+#' @importFrom glue glue
+#' 
+#' @return The docx object `doc`
+#' @export
+#' 
+#' @examples 
+#' library(officer)
+#' ctl = list(iris2=crosstable(iris2, 1),
+#'            mtcars2=crosstable(mtcars2, 1),
+#'            "just a flextable"=flextable::flextable(mtcars2[1:5,1:5]))
+#' 
+#' myfun = function(doc, .name){
+#'     doc %>% 
+#'         body_add_title(" This is table '{.name}' as a flex/crosstable", level=2) %>%
+#'         body_add_normal("Here is the table:")
+#' }
+#' 
+#' read_docx() %>% 
+#'     body_add_title("Separated by subtitle", 1) %>% 
+#'     body_add_crosstable_list(ctl, fun="title2") %>% 
+#'     body_add_title("Separated by new line", 1) %>% 
+#'     body_add_crosstable_list(ctl, fun="newline") %>% 
+#'     body_add_title("Separated using a custom function", 1) %>% 
+#'     body_add_crosstable_list(ctl, fun=myfun, body_fontsize=8) %>% 
+#'     write_and_open()
+body_add_crosstable_list = function(doc, l, fun="title2", ...){
+    assert_list(l)
+    assert_named(l)
+    l = map(l, ~{
+        if(!is.crosstable(.x) && is.data.frame(.x)) .x = flextable(.x)
+        assert_multi_class(.x, c("flextable", "crosstable"))
+        .x
+    })
+    
+    if(is_string(fun)){
+        if(fun=="title2") fun=function(doc, .name) body_add_title(doc, .name, 2)
+        else if(fun=="title3") fun=function(doc, .name) body_add_title(doc, .name, 3)
+        else if(fun=="title4") fun=function(doc, .name) body_add_title(doc, .name, 4)
+        else if(fun=="newline") fun=function(doc, .name) body_add_normal(doc, "")
+        else {
+            abort(c('`fun` should be either a function or a member of c("title2", "title3", "title4", "newline")', 
+                    i=glue("Current value: '{fun}'")), 
+                  class="body_add_crosstable_list_fun_name")
+        }
+    } else if(is.null(fun)) fun=function(doc, .name) doc
+    assert_class(fun, "function")
+    
+    if(!identical(formalArgs(fun), c("doc", ".name"))){
+        abort(c('`fun` should be of the form `function(doc, .name)`', 
+                i=paste0("Current arg names: ", paste0(formalArgs(fun), collapse=", "))), 
+              class="body_add_crosstable_list_fun_args")
+    }
+    
+    argnames = names(list(...))
+    for(i in names(l)){
+        x=l[[i]]
+        doc = doc %>% fun(.name=i)
+        if(is.crosstable(x)) {
+            args = intersect(argnames, names(as.list(args(body_add_crosstable))))
+            doc = do.call(body_add_crosstable, c(list(doc=doc, x=x), list(...)[args]))
+        } else {       
+            args = intersect(argnames, names(as.list(args(body_add_flextable))))
+            doc = do.call(body_add_flextable, c(list(x=doc, value=x), list(...)[args]))
+        }
+    }
+    
+    doc
+}
+
+#' @rdname body_add_crosstable_list
+#' @export
+body_add_flextable_list = body_add_crosstable_list
+
+
 #' Add a table legend to an `officer` document
 #'
 #' @param doc a docx object
@@ -307,6 +396,7 @@ body_add_legend = function(doc, legend, legend_name, bookmark,
                            legend_style, name_format, seqfield, 
                            style, legacy){
     
+    # nocov start
     if(packageVersion("officer")<"0.4" || legacy){
         if(!legacy){
             warn("You might want to update officer to v0.4+ in order to get the best of crosstable::body_add_xxx_legend().", 
@@ -327,6 +417,7 @@ body_add_legend = function(doc, legend, legend_name, bookmark,
                        "body_add_X_legend(name_format)", 
                        details="The `style` argument has been ignored. Use `legacy=TRUE` to override.")
     }
+    # nocov end
 
     fp_text2 = officer::fp_text_lite #v0.4+
     if(is.null(name_format)){
@@ -353,6 +444,7 @@ body_add_legend = function(doc, legend, legend_name, bookmark,
 }
 
 
+# nocov start
 #' @importFrom glue glue
 #' @importFrom officer body_add_par slip_in_text slip_in_seqfield body_bookmark
 #' @keywords internal
@@ -370,6 +462,7 @@ body_add_legend_legacy = function(doc, legend, legend_name, bookmark,
     }
     slip_in_text(rtn, str=glue("{legend_name} "), style=style, pos="before")
 }
+# nocov end
 
 
 
@@ -589,10 +682,12 @@ write_and_open = function(doc, docx.file){
 #' This function generates a file that can be imported into MS Word in order to use a macro for autofitting all tables in a document at once. This macro file should be imported only once per computer.
 #' 
 #' @section Installation:
-#'  * Run `generate_autofit_macro()` in `R` to generate the file `crosstable_autofit.bas` in your working directory. 
+#'  * In the `R` console, run `generate_autofit_macro()` to generate the file `crosstable_autofit.bas` in your working directory. 
 #'  * In MS Word, press Alt+F11 to open the VB Editor.
 #'  * In the Editor, go to `File` > `Import` or press `Ctrl+M` to open the import dialog, and import `crosstable_autofit.bas`. There should now be a "CrosstableMacros" module in the "Normal" project.
 #'  * Run the macro, either from the VB Editor or from `View` > `Macros` > `View Macros` > `Run`.
+#'  
+#'  This process will make the macro accessible from any Word file on this computer. Note that, in the Editor, you can also drag the module to your document project to make the macro accessible only from this file. The file will have to be named with the `docm` extension though.
 #'
 #' @return nothing
 #' @author Dan Chaltiel

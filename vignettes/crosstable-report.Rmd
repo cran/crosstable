@@ -22,6 +22,14 @@ library(crosstable)
 library(dplyr)
 ```
 
+## Embed crosstables in reports
+
+Crosstables can be inserted into automatics reports very easily.
+
+There are two cases to consider:
++ You have a lot of text and a few tables? You should use [Rmarkdown](#create-reports-with-rmarkdown).
++ You have a lot of tables and little text? You should use [officer](#create-reports-with-officer).
+
 ## Create reports with `officer`
 
 The real power of `crosstable` comes out when used with David Gohel's awesome package [`officer` ](https://davidgohel.github.io/officer/), which allows to automatically create MS Word documents. 
@@ -58,6 +66,7 @@ doc = read_docx() %>% #default template
   body_add_crosstable(ct2, compact=TRUE)
 ```
 
+See more useful functions at [https://danchaltiel.github.io/crosstable/reference/index.html#section-officer-helpers](https://danchaltiel.github.io/crosstable/reference/index.html#section-officer-helpers).
 
 ### Output
 
@@ -74,7 +83,7 @@ write_and_open(doc, "my_report.docx") #fails if it is already open
 print(doc, "my_report.docx")          #only save the docx file
 ```
 
-You can check out the result of the example above [here](https://github.com/DanChaltiel/crosstable/raw/master/examples/vignette_officer.docx).
+You can check out the result of the example above [here](https://github.com/DanChaltiel/crosstable/raw/main/examples/vignette_officer.docx).
 
 ### Functions
 
@@ -88,6 +97,26 @@ Here is a brief description of the functions used in this example:
  + `body_add_gg2()`: adds a ggplot. Unlike `officer::body_add_gg()`, you can change the unit using the `units` argument or the options `options(crosstable_units="cm")`.
 
 Browse https://davidgohel.github.io/officer/ for more insight about how you can use `{officer}`.
+
+
+### Autofit macro for large tables
+
+This is great, but large tables will unfortunately overflow your document.
+
+This is a ([known](https://ardata-fr.github.io/officeverse/faq.html#update-fields)) limitation that cannot be fixed using `R`.
+
+You would have to use MS Word autofit tools on each table one by one (`Table Tools > Layout > AutoFit > AutoFit Window`), which can be really tedious.
+
+But fear not! You can use a MS Word macro to do the job for you. Here is how:
+
+* In the R console, run `generate_autofit_macro()` to generate the file `crosstable_autofit.bas` in your working directory.
+
+* In MS Word, press <kbd>Alt</kbd>+<kbd>F11</kbd> to open the VB Editor.
+
+* In the Editor, go to `File` > `Import` or press `Ctrl+M` to open the import dialog, and import `crosstable_autofit.bas`. There should now be a "CrosstableMacros" module in the "Normal" project.
+* Run the macro, either from the VB Editor or from `View` > `Macros` > `View Macros` > `Run`.
+  
+This process will make the macro accessible from any Word file on this computer. Note that, in the Editor, you can also drag the module to your document project to make the macro accessible only from this file. The file will have to be named with the `docm` extension though.
 
 ### Styles
 
@@ -120,9 +149,6 @@ Depending on your version of `{officer}`, Word will ask you to update the fields
 If it does not ask or if you answer "No", the legends added with `body_add_table_legend()` or `body_add_figure_legend()` might have no actual numbers displayed.   
 In this case, you have to manually update the references inside MS Word: select all (\kbd{Ctrl}+\kbd{A}), then update (\kbd{F9}), sometimes twice. You might even need to do this several times. See `?body_add_legend` for more insight.
 
- + Large tables can sometimes overflow the MS Word document width. In this case (for instance for `mtcars2` in the previous example), you have to manually go to `Table Tools > Layout > AutoFit > AutoFit Window` in the ribbon to correct the width. This is a limitation that comes with `officer` ([link](https://ardata-fr.github.io/officeverse/faq.html#update-fields)).
- You can also use `generate_autofit_macro()` to generate a `.bas` file that, once imported in Word, unlocks the possibility to autofit every table of the document at once. See `?generate_autofit_macro` for more details.
- 
  + Be aware that you unfortunately cannot reference a bookmark more than once using this method. Writing: 
 `body_add_normal("Table \\@ref(iris_col1) is about flowers. I like this Table \\@ref(iris_col1).")` will prevent **all** the numbering from applying.
 

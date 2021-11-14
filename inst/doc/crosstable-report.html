@@ -12,7 +12,7 @@
 
 <meta name="author" content="Dan Chaltiel" />
 
-<meta name="date" content="2021-10-19" />
+<meta name="date" content="2021-11-14" />
 
 <title>Make automatic reports</title>
 
@@ -141,10 +141,15 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
 <h1 class="title toc-ignore">Make automatic reports</h1>
 <h4 class="author">Dan Chaltiel</h4>
-<h4 class="date">2021-10-19</h4>
+<h4 class="date">2021-11-14</h4>
 
 
 
+<div id="embed-crosstables-in-reports" class="section level2">
+<h2>Embed crosstables in reports</h2>
+<p>Crosstables can be inserted into automatics reports very easily.</p>
+<p>There are two cases to consider: + You have a lot of text and a few tables? You should use <a href="#create-reports-with-rmarkdown">Rmarkdown</a>. + You have a lot of tables and little text? You should use <a href="#create-reports-with-officer">officer</a>.</p>
+</div>
 <div id="create-reports-with-officer" class="section level2">
 <h2>Create reports with <code>officer</code></h2>
 <p>The real power of <code>crosstable</code> comes out when used with David Gohel’s awesome package <a href="https://davidgohel.github.io/officer/"><code>officer</code></a>, which allows to automatically create MS Word documents.</p>
@@ -176,13 +181,14 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">body_add_normal</span>(<span class="st">&quot;This dataset has {nrow(ct3)} rows and {x} columns.&quot;</span>, <span class="at">x=</span><span class="fu">ncol</span>(ct3)) <span class="sc">%&gt;%</span></span>
 <span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">body_add_normal</span>(<span class="st">&quot;Look, there are labels!&quot;</span>) <span class="sc">%&gt;%</span></span>
 <span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">body_add_crosstable</span>(ct2, <span class="at">compact=</span><span class="cn">TRUE</span>)</span></code></pre></div>
+<p>See more useful functions at <a href="https://danchaltiel.github.io/crosstable/reference/index.html#section-officer-helpers">https://danchaltiel.github.io/crosstable/reference/index.html#section-officer-helpers</a>.</p>
 <div id="output" class="section level3">
 <h3>Output</h3>
 <p>To see the resulting Word document, use:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">write_and_open</span>(doc)                   <span class="co">#save and open the docx file in a temporary file for a quick peek</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">write_and_open</span>(doc, <span class="st">&quot;my_report.docx&quot;</span>) <span class="co">#fails if it is already open</span></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(doc, <span class="st">&quot;my_report.docx&quot;</span>)          <span class="co">#only save the docx file</span></span></code></pre></div>
-<p>You can check out the result of the example above <a href="https://github.com/DanChaltiel/crosstable/raw/master/examples/vignette_officer.docx">here</a>.</p>
+<p>You can check out the result of the example above <a href="https://github.com/DanChaltiel/crosstable/raw/main/examples/vignette_officer.docx">here</a>.</p>
 </div>
 <div id="functions" class="section level3">
 <h3>Functions</h3>
@@ -196,6 +202,20 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li><code>body_add_gg2()</code>: adds a ggplot. Unlike <code>officer::body_add_gg()</code>, you can change the unit using the <code>units</code> argument or the options <code>options(crosstable_units=&quot;cm&quot;)</code>.</li>
 </ul>
 <p>Browse <a href="https://davidgohel.github.io/officer/" class="uri">https://davidgohel.github.io/officer/</a> for more insight about how you can use <code>{officer}</code>.</p>
+</div>
+<div id="autofit-macro-for-large-tables" class="section level3">
+<h3>Autofit macro for large tables</h3>
+<p>This is great, but large tables will unfortunately overflow your document.</p>
+<p>This is a (<a href="https://ardata-fr.github.io/officeverse/faq.html#update-fields">known</a>) limitation that cannot be fixed using <code>R</code>.</p>
+<p>You would have to use MS Word autofit tools on each table one by one (<code>Table Tools &gt; Layout &gt; AutoFit &gt; AutoFit Window</code>), which can be really tedious.</p>
+<p>But fear not! You can use a MS Word macro to do the job for you. Here is how:</p>
+<ul>
+<li><p>In the R console, run <code>generate_autofit_macro()</code> to generate the file <code>crosstable_autofit.bas</code> in your working directory.</p></li>
+<li><p>In MS Word, press <kbd>Alt</kbd>+<kbd>F11</kbd> to open the VB Editor.</p></li>
+<li><p>In the Editor, go to <code>File</code> &gt; <code>Import</code> or press <code>Ctrl+M</code> to open the import dialog, and import <code>crosstable_autofit.bas</code>. There should now be a “CrosstableMacros” module in the “Normal” project.</p></li>
+<li><p>Run the macro, either from the VB Editor or from <code>View</code> &gt; <code>Macros</code> &gt; <code>View Macros</code> &gt; <code>Run</code>.</p></li>
+</ul>
+<p>This process will make the macro accessible from any Word file on this computer. Note that, in the Editor, you can also drag the module to your document project to make the macro accessible only from this file. The file will have to be named with the <code>docm</code> extension though.</p>
 </div>
 <div id="styles" class="section level3">
 <h3>Styles</h3>
@@ -219,7 +239,6 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul>
 <li><p>During the opening of the document, MS Word might ask you to “update the fields”, to which you should answer “Yes”. If it does not ask or if you answer “No”, the legends added with <code>body_add_table_legend()</code> or <code>body_add_figure_legend()</code> might have no actual numbers displayed.<br />
 In this case, you have to manually update the references inside MS Word: select all (+), then update (), sometimes twice. You might even need to do this several times. See <code>?body_add_legend</code> for more insight.</p></li>
-<li><p>Large tables can sometimes overflow the MS Word document width. In this case (for instance for <code>mtcars2</code> in the previous example), you have to manually go to <code>Table Tools &gt; Layout &gt; AutoFit &gt; AutoFit Window</code> in the ribbon to correct the width. This is a limitation that comes with <code>officer</code> (<a href="https://ardata-fr.github.io/officeverse/faq.html#update-fields">link</a>). You can also use <code>generate_autofit_macro()</code> to generate a <code>.bas</code> file that, once imported in Word, unlocks the possibility to autofit every table of the document at once. See <code>?generate_autofit_macro</code> for more details.</p></li>
 <li><p>Be aware that you unfortunately cannot reference a bookmark more than once using this method. Writing: <code>body_add_normal(&quot;Table \\@ref(iris_col1) is about flowers. I like this Table \\@ref(iris_col1).&quot;)</code> will prevent <strong>all</strong> the numbering from applying.</p></li>
 </ul>
 </div>

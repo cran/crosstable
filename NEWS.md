@@ -1,6 +1,29 @@
 <!-- https://style.tidyverse.org/news.html -->
 
-# crosstable 0.2.2 <sub><sup>(2021-08)</sup></sub>
+# crosstable 0.3.0 <sub><sup>(xxx)</sup></sub>
+
+#### New features
+
+* New parameter `percent_pattern` in replacement of `crosstable(margin=x)` for better control over proportion format. Introduces the possibility of displaying confidence intervals (using Wilson score method) along with proportions.
+* New function `body_add_crosstable_list()` to add a list of crosstables all at once, separated by some customizable titles. Also works with flextables and plain old dataframes.
+* New argument `crosstable_padding_v` for `as_flextable()` to manage vertical padding. Also available as the global option `crosstable_padding_v`.
+* New global options `crosstable_{arg}` for almost all arguments. See `?crosstable_options` for more details.
+
+
+#### Bug fixes
+
+* fixed a bug in `as_flextable()` occurring when `showNA=TRUE` (header row was disappearing)
+* fixed a bug occurring very randomly, when rounding caused `format_fixed()` to return a numeric value ("Error: Can't combine `..1$value` <character> and `..2$value` <double>.")
+* crosstable now shows all unused levels in `by` when it is a factor 
+* removed extra bold columns in compacted crosstables displayed as flextables
+
+
+#### Internal
+
+* renamed branch `master` to `main`
+* use a lot more snapshots in tests
+
+# crosstable 0.2.2 <sub><sup>(2021-10-18)</sup></sub>
 
 #### New features
 
@@ -17,7 +40,7 @@
 * `style` is deprecated in `body_add_table_legend()` and `body_add_image_legend()` in favor of `name_format`.
 * Changed the behaviour of some `effect` calculations that were done by column instead of rows. That might change some outputs but not their meaning.
 * `body_add_normal()` now removes duplicated spaces (squish) in its input by default. Use `squish=FALSE` to override.
-* `docx_bookmarks2()` gainss a `target` parameter.
+* `docx_bookmarks2()` gains a `target` parameter.
 
 #### Bug fixes
 
