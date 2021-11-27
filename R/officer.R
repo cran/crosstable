@@ -64,7 +64,7 @@ body_add_crosstable = function (doc, x, body_fontsize=NULL,
 #' @param doc the doc object (created with the `read_docx` function of `officer` package)
 #' @param ... one or several character strings, pasted using `.sep`. As with `glue::glue()`, expressions enclosed by braces will be evaluated as R code. If more than one variable is passed, all should be of length 1.
 #' @param .sep Separator used to separate elements.
-#' @param squish Whether to squish the result (remove trailing and repeated spaces). Default to `TRUE`.
+#' @param squish Whether to squish the result (remove trailing and repeated spaces). Default to `TRUE`. Allows to add multiline paragraph without breaking the string.
 #'
 #' @return a new doc object
 #' 
@@ -89,6 +89,7 @@ body_add_crosstable = function (doc, x, body_fontsize=NULL,
 #'     body_add_normal(info_rows)                                              #vector style
 #' #write_and_open(doc)
 body_add_normal = function(doc, ..., .sep="", squish=TRUE) {
+    if(missing(squish)) squish = getOption("crosstable_normal_squish", TRUE)
     dots = list(...)
     normal_style = getOption('crosstable_style_normal', doc$default_styles$paragraph)
     lengths = map_dbl(dots, length)
@@ -97,14 +98,13 @@ body_add_normal = function(doc, ..., .sep="", squish=TRUE) {
         value = glue(..., .sep=.sep, .envir=parent.frame())
         if(squish) value = str_squish(value)
         if(length(value) > 0 && str_detect(value, "\\\\@ref\\((.*?)\\)")){
-            # doc = body_add_par(doc, "") %>% parse_reference(value)
             doc = body_add_par(doc, "") %>% parse_reference(value)
         } else{
             doc = body_add_par(doc, value, style=normal_style)
         }
     } else if(length(dots)==1) { #one vector (of 1 or more) -> recursive call
         for(i in dots[[1]]){
-            doc = body_add_normal(doc, i, .sep=.sep)
+            doc = body_add_normal(doc, i, .sep=.sep, squish=squish)
         }
     } else { #several vectors of which at least one is length 2+
         abort(c("body_add_normal() only accepts either one vector of any length or several vectors of length 1", 
@@ -113,16 +113,6 @@ body_add_normal = function(doc, ..., .sep="", squish=TRUE) {
     }
     
     doc
-}
-
-#' @usage NULL
-#' @importFrom lifecycle deprecate_warn
-#' @rdname body_add_normal
-#' @author Dan Chaltiel
-#' @export
-body_add_glued = function(...){
-    deprecate_warn("0.2.0", "body_add_glued()", "body_add_normal()")# nocov
-    body_add_normal(...)# nocov
 }
 
 
@@ -154,6 +144,7 @@ body_add_glued = function(...){
 #' #write_and_open(doc)
 body_add_title = function(doc, value, level = 1, squish=TRUE, 
                           style = getOption('crosstable_style_heading', "heading")) {
+    if(missing(squish)) squish = getOption("crosstable_title_squish", TRUE)
     value = glue(value, .envir = parent.frame())
     if(squish) value = str_squish(value)
     style = paste(style, level)
@@ -305,7 +296,9 @@ body_add_crosstable_list = function(doc, l, fun="title2", ...){
 body_add_flextable_list = body_add_crosstable_list
 
 
-#' Add a table legend to an `officer` document
+#' Add a legend to a table or a figure 
+#' 
+#' Add a legend to a table or a figure in an `officer` document. Legends can be referred to using the `@ref` syntax in [body_add_normal()] (see examples for some use cases). Table legends should be inserted before the table while figure legends should be inserted after the figure.
 #'
 #' @param doc a docx object
 #' @param legend the table legend. As with [glue::glue()], expressions enclosed by braces will be evaluated as R code.
@@ -315,6 +308,7 @@ body_add_flextable_list = body_add_crosstable_list
 #' @param legend_name name before the numbering. Default to either "Table" or "Figure".
 #' @param style deprecated in favor of `name_format`.
 #' @param seqfield Keep default. Otherwise, you may figure it out doing this: in a docx file, insert a table legend, right click on the inserted number and select "Toggle Field Codes". This argument should be the value of the field, with extra escaping.
+#' @param par_before,par_after should an empty paragraph be inserted before/after the legend?
 #' @param legacy use the old version of this function, if you cannot update `{officer}` to v0.4+
 #' 
 #' @return The docx object `doc`
@@ -364,7 +358,12 @@ body_add_table_legend = function(doc, legend, bookmark=NULL,
                                  name_format=NULL,
                                  legend_name="Table", 
                                  seqfield="SEQ Table \\* Arabic", 
+                                 par_before=FALSE,
                                  legacy=FALSE){
+    if(missing(par_before)) par_before = getOption("crosstable_table_legend_par_before", FALSE)
+    if(par_before){
+        doc=body_add_normal(doc, "")
+    }
     body_add_legend(doc=doc, legend=legend, legend_name=legend_name,
                     bookmark=bookmark, legend_style=legend_style,
                     name_format=name_format, seqfield=seqfield, 
@@ -380,11 +379,17 @@ body_add_figure_legend = function(doc, legend, bookmark=NULL,
                                   name_format=NULL,
                                   legend_name="Figure", 
                                   seqfield="SEQ Figure \\* Arabic", 
+                                  par_after=FALSE,
                                   legacy=FALSE){
-    body_add_legend(doc=doc, legend=legend, legend_name=legend_name,
+    if(missing(par_after)) par_after = getOption("crosstable_figure_legend_par_after", FALSE)
+    doc = body_add_legend(doc=doc, legend=legend, legend_name=legend_name,
                     bookmark=bookmark, legend_style=legend_style,
                     name_format=name_format, seqfield=seqfield, 
                     style=style, legacy=legacy)
+    if(par_after){
+        doc=body_add_normal(doc, "")
+    }
+    doc
 }
 
 
@@ -501,7 +506,6 @@ body_add_img2 = function(doc, src, width, height,
 
 
 
-
 #' Alternative to [officer::body_add_gg()] which uses `ggplot` syntax
 #'  
 #' @param doc an `rdocx` object
@@ -544,6 +548,29 @@ body_add_gg2 = function(doc, value, width = 6, height = 5,
     body_add_img2(doc, src=file, style=style, width=width, height=height, units=units)
 }
 
+
+
+#' Replace text on several bookmarks at once
+#'
+#' @param doc a `rdocx` object
+#' @param ... named
+#' 
+#' @importFrom officer body_replace_text_at_bkm
+#' @importFrom purrr iwalk safely
+#' @return The docx object `doc`
+#' @author Dan Chaltiel
+#' @export
+body_replace_text_at_bkms = function(doc, ...){
+    l=list(...)
+    #TODO tester qu'il y a bien un nom à chaque élément!
+    iwalk(l, ~{
+        .x = glue(.x, .envir=parent.frame())
+        x = safely(body_replace_text_at_bkm)(doc, .y, .x)
+        if(is.null(x$result)) warning(x$error$message, call.=FALSE)
+        else doc = x$result
+    })
+    doc
+}
 
 
 #' Adds a standard footnote explaining the abbreviations used in a crosstable
@@ -689,7 +716,7 @@ write_and_open = function(doc, docx.file){
 #'  
 #'  This process will make the macro accessible from any Word file on this computer. Note that, in the Editor, you can also drag the module to your document project to make the macro accessible only from this file. The file will have to be named with the `docm` extension though.
 #'
-#' @return nothing
+#' @return Nothing, called for its side effects
 #' @author Dan Chaltiel
 #' @export
 generate_autofit_macro = function(){
@@ -747,6 +774,31 @@ parse_reference = function(doc, value){
     body_add_fpar(doc, p)
 }
 
+
+#' TODO: faire une fonction qui parse le format (**=gras, *=italique, _=souligné)
+#' @keywords internal
+#' @noRd
+parse_format = function(doc, value){
+    if(packageVersion("officer")<"0.4") return(doc)
+    browser()
+    par_not_ref = str_split(value, "\\\\@ref\\(.*?\\)")[[1]]
+    par_ref = stringr::str_extract_all(value, "\\\\@ref\\(.*?\\)")[[1]]
+    #altern: https://stackoverflow.com/a/43876294/3888000
+    altern = c(par_not_ref, par_ref)[order(c(seq_along(par_not_ref)*2 - 1, seq_along(par_ref)*2))] 
+    
+    par_list = map(altern, ~{
+        if(str_detect(.x, "\\\\@ref")){
+            bkm = stringr::str_match(.x, "\\\\@ref\\((.*?)\\)")[,2]
+            run_word_field(glue(' REF {bkm} \\h '))
+        } else {
+            ftext(.x)
+        }
+    })
+    
+    p=do.call(fpar, args=par_list)
+    body_add_fpar(doc, p)
+}
+
 # nocov start
 
 #' @importFrom stringr str_detect str_match_all
@@ -777,3 +829,18 @@ parse_reference_legacy = function(doc, value){
 }
 
 # nocov end
+
+
+
+# Deprecated --------------------------------------------------------------
+
+
+#' @usage NULL
+#' @importFrom lifecycle deprecate_warn
+#' @rdname body_add_normal
+#' @author Dan Chaltiel
+#' @export
+body_add_glued = function(...){
+    deprecate_warn("0.2.0", "body_add_glued()", "body_add_normal()")# nocov
+    body_add_normal(...)# nocov
+}
