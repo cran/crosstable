@@ -21,38 +21,41 @@
   padding_v = NULL,
   remove_header_keys = FALSE,
   header_show_n = FALSE,
+  header_show_n_pattern = "{.col} (N={.n})",
   generic_labels = list(id = ".id", variable = "variable", value = "value", total =
     "Total", label = "label", test = "test", effect = "effect"),
   ...
 )
 }
 \arguments{
-\item{x}{the result of \code{\link[=crosstable]{crosstable()}}}
+\item{x}{the result of \code{\link[=crosstable]{crosstable()}}.}
 
-\item{keep_id}{whether to keep the \code{.id} column}
+\item{keep_id}{whether to keep the \code{.id} column.}
 
-\item{by_header}{a string to override the \code{by} header}
+\item{by_header}{a string to override the header if \code{x} has only one \code{by} stratum.}
 
-\item{autofit}{whether to use \code{\link[flextable:autofit]{flextable::autofit()}} on the table}
+\item{autofit}{whether to use \code{\link[flextable:autofit]{flextable::autofit()}} on the table.}
 
-\item{compact}{whether to compact the table}
+\item{compact}{whether to compact the table. If \code{TRUE}, see \code{\link[=compact.crosstable]{compact.crosstable()}} to see how to use \code{keep_id}.}
 
-\item{show_test_name}{in the \code{test} column, show the test name}
+\item{show_test_name}{in the \code{test} column, show the test name.}
 
-\item{fontsizes}{font sizes as a list of keys \code{c(body, subheaders, header)}. If set through arguments instead of options, all 3 names should be specified.}
+\item{fontsizes}{font sizes as a list of keys. Default to \code{list(body=11, subheaders=11, header=11)}. If set through arguments instead of options, all 3 names should be specified.}
 
-\item{padding_v}{vertical padding (body)}
+\item{padding_v}{vertical padding (body).}
 
-\item{remove_header_keys}{if \code{TRUE} and \code{x} has several \code{by} strata, header will only display values}
+\item{remove_header_keys}{if \code{TRUE} and \code{x} has several \code{by} strata, header will only display values.}
 
-\item{header_show_n}{show the size (\code{N=xx}) of each terminal \code{by} strata in their header}
+\item{header_show_n}{numeric vector telling on which depth the group size should be indicated in the header. You can control the pattern using option \code{crosstable_options}. See \code{\link[=crosstable_options]{crosstable_options()}} for details about it. See example for use case.}
+
+\item{header_show_n_pattern}{glue pattern used when \code{header_show_n==TRUE}. \code{.col} is the name of the column and \code{.n} the size of the group. Default to \code{{.col} (N={.n})}; you can use \code{{.col_key}} and \code{{.col_val}} when \code{by} has multiple stratum.}
 
 \item{generic_labels}{names of the crosstable default columns. Useful for translation for instance.}
 
-\item{...}{unused}
+\item{...}{unused.}
 }
 \value{
-a flextable
+a flextable.
 }
 \section{Methods (by class)}{
 \itemize{
@@ -67,14 +70,14 @@ crosstable_options(crosstable_fontsize_header=14,
                    crosstable_fontsize_subheaders=10, 
                    crosstable_fontsize_body=8)
 crosstable(iris) \%>\% as_flextable()
-crosstable(mtcars2, by=c(am, vs)) \%>\% as_flextable()
+crosstable(mtcars2, -model, by=c(am, vs)) \%>\% as_flextable(header_show_n=1:2)
 crosstable(mtcars2, cols=c(mpg, cyl), by=am, effect=TRUE) \%>\% 
    as_flextable(keep_id=TRUE, autofit=FALSE)
 crosstable(mtcars2, cols=c(mpg, cyl), by=am, effect=TRUE) \%>\% 
-   as_flextable(compact=TRUE)
+   as_flextable(compact=TRUE, header_show_n=TRUE)
 
 #Renaming (because why not?)
-crosstable(mtcars2, by=vs, total="both", test=TRUE, effect=TRUE) \%>\%
+crosstable(mtcars2, -model, by=vs, total="both", test=TRUE, effect=TRUE) \%>\%
    rename(ID=.id, math=variable, Tot=Total, lab=label, pval=test, fx=effect) \%>\%
    as_flextable(by_header = "Engine shape", 
                 generic_labels=list(id = "ID", variable = "math", total="Tot", 

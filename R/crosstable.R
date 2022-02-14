@@ -8,7 +8,7 @@ utils::globalVariables(c(".", "x", "y", "n", "where", "ct", "col_keys", "p_col",
 #' Can be formatted as an HTML table using [as_flextable()].
 #' 
 #' @param data A data.frame
-#' @param cols The variables to describe. Can be a character or name vector, a tidyselect helper, a (lambda) function that returns a logical, or a formula. See examples or `vignette("crosstable-selection")` for more details.
+#' @param cols <[`tidy-select`][tidyselect::language]> Columns to describe. See examples or `vignette("crosstable-selection")` for more details.
 #' @param ... Unused. All parameters after this one must be named.
 #' @param by The variable to group on. Character or name.
 #' @param funs Functions to apply to numeric variables. Default to [cross_summary()].
@@ -79,7 +79,7 @@ utils::globalVariables(c(".", "x", "y", "n", "where", "ct", "col_keys", "p_col",
 #' 
 #' #Survival data (using formula syntax)
 #' library(survival)
-#' crosstable(aml, Surv(time, status) ~ x,times=c(0,15,30,150), followup=TRUE)
+#' crosstable(aml, Surv(time, status) ~ x, times=c(0,15,30,150), followup=TRUE)
 #' 
 #' #Patterns
 #' crosstable(mtcars2, vs, by=am, percent_digits=0, 
@@ -274,7 +274,8 @@ crosstable = function(data, cols=NULL, ..., by=NULL,
                    ~ .x %>% as.character() %>% set_label(get_label(.x))),
             across(where(~is.numeric.and.not.surv(.x) && n_distinct(.x, na.rm=TRUE)<=unique_numeric),
                    ~{
-                       .x = factor(.x, labels=unique(mixedsort(.x))) %>% set_label(get_label(.x))
+                       levels = na.omit(unique(mixedsort(.x)))
+                       .x = factor(.x, labels=levels) %>% set_label(get_label(.x))
                        class(.x) = c("unique_numeric", class(.x))
                        .x
                    }),
@@ -287,7 +288,8 @@ crosstable = function(data, cols=NULL, ..., by=NULL,
                    ~ .x %>% as.character() %>% set_label(get_label(.x))),
             across(where(~is.numeric.and.not.surv(.x) && n_distinct(.x, na.rm=TRUE)<=unique_numeric), 
                    ~{
-                       .x = factor(.x, labels=unique(mixedsort(.x))) %>% set_label(get_label(.x))
+                       levels = na.omit(unique(mixedsort(.x)))
+                       .x = factor(.x, labels=levels) %>% set_label(get_label(.x))
                        class(.x) = c("unique_numeric", class(.x))
                        .x
                    })
@@ -398,7 +400,7 @@ crosstable = function(data, cols=NULL, ..., by=NULL,
     # Function call -------------------------------------------------------
     by_levels = map(data_y, ~{
         if(is.numeric(.x)) NULL 
-        else if(is.factor(.x)) levels(.x)
+        else if(is.factor(.x)) levels(fct_explicit_na(.x, "NA"))
         else sort(unique(as.character(.x)), na.last=TRUE)
     })
     if(showNA=="no") by_levels = map(by_levels, ~.x[!is.na(.x)])
@@ -460,7 +462,11 @@ crosstable = function(data, cols=NULL, ..., by=NULL,
 # Utils -------------------------------------------------------------------
 
 
-#' @rdname crosstable
+#' Test if an object is a crosstable
+#' 
+#' @param x An object
+#'
+#' @return TRUE if the object inherits from the `crosstable` class.
 #' @export
 is.crosstable = function(x) {
     inherits(x, "crosstable")

@@ -32,25 +32,29 @@ kbd {
 library(crosstable)
 library(dplyr)
 mtcars_labels = read.table(header=TRUE, text="
-  name label
-  mpg  'Miles/(US) gallon'
-  cyl  'Number of cylinders'
-  disp 'Displacement (cu.in.)'
-  hp   'Gross horsepower'
-  drat 'Rear axle ratio'
-  wt   'Weight (1000 lbs)'
-  qsec '1/4 mile time'
-  vs   'Engine'
-  am   'Transmission'
-  gear 'Number of forward gears'
-  carb 'Number of carburetors'
+  name  label
+  model 'Model'
+  mpg   'Miles/(US) gallon'
+  cyl   'Number of cylinders'
+  disp  'Displacement (cu.in.)'
+  hp    'Gross horsepower'
+  drat  'Rear axle ratio'
+  wt    'Weight (1000 lbs)'
+  qsec  '1/4 mile time'
+  vs    'Engine'
+  am    'Transmission'
+  gear  'Number of forward gears'
+  carb  'Number of carburetors'
 ")
 mtcars2 = mtcars %>% 
-  mutate(vs=ifelse(vs==0, "vshaped", "straight"),
-         am=ifelse(am==0, "auto", "manual")) %>% 
-  mutate_at(c("cyl", "gear"), factor) %>% 
-  import_labels(mtcars_labels, name_from="name", label_from="label") 
-#I also could have used `Hmisc::label()` or `expss::apply_labels()` to add labels
+  mutate(model=rownames(mtcars), 
+         vs=ifelse(vs==0, "vshaped", "straight"),
+         am=ifelse(am==0, "auto", "manual"), 
+         across(c("cyl", "gear"), factor),
+         .before=1) %>% 
+  import_labels(mtcars_labels, name_from="name", label_from="label") %>% 
+  as_tibble()
+#I also could have used `labelled::set_variable_labels()` to add labels
 
 ## ----crosstable-flextable-------------------------------------------------------------------------
 crosstable(mtcars2, c(mpg, cyl), by=am) %>%
@@ -94,7 +98,6 @@ crosstable(mtcars2, c(x_date, x_posix), funs=meansd, funs_arg=list(date_unit="da
   as_flextable(keep_id=TRUE)
 
 ## ----crosstable-effect----------------------------------------------------------------------------
-library(flextable)
 crosstable(mtcars2, c(vs, qsec), by=am, funs=mean, effect=TRUE) %>% 
   as_flextable(keep_id=TRUE)
 

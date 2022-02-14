@@ -14,6 +14,13 @@ crosstable_options(
   crosstable_units,
   crosstable_peek_docx,
   crosstable_compact_padding,
+  crosstable_font_code,
+  crosstable_format_legend_name,
+  crosstable_table_legend_par_before,
+  crosstable_table_legend_prefix,
+  crosstable_figure_legend_par_after,
+  crosstable_figure_legend_prefix,
+  crosstable_header_show_n_pattern,
   crosstable_total,
   crosstable_percent_pattern,
   crosstable_percent_digits,
@@ -69,6 +76,18 @@ crosstable_options(
 \item{crosstable_peek_docx}{behavior of \code{\link[=peek]{peek()}}, which will open a \code{docx} if \code{TRUE} (default) and an \code{xlsx} if \code{FALSE}}
 
 \item{crosstable_compact_padding}{in flextables, left-padding for non-headers rows when \code{compact=TRUE}.}
+
+\item{crosstable_font_code}{font family used to show code, most likely a monospaced typeface such as Consolas (default)}
+
+\item{crosstable_format_legend_name}{how the legend name ("Table", "Figure") is formatted. Default to \code{officer::fp_text_lite(bold=TRUE)}}
+
+\item{crosstable_table_legend_par_before}{whether to add an empty paragraph before all table legends}
+
+\item{crosstable_table_legend_prefix, crosstable_figure_legend_prefix}{a prefix before each legend, after the numbering}
+
+\item{crosstable_figure_legend_par_after}{whether to add an empty paragraph after all figure legends}
+
+\item{crosstable_header_show_n_pattern}{glue pattern used when showing N in the header of flextables. \code{.col} is the name of the column and \code{.n} the size of the group. Default to \code{{.col} (N={.n})}.}
 
 \item{crosstable_total}{For setting \code{\link[=crosstable]{crosstable()}} arguments globally.}
 

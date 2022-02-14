@@ -110,7 +110,6 @@ summarize_numeric_factor = function(x, by, funs, funs_arg, showNA, total,
     } else{
         by_filter = !is.na(by) 
     }
-    # browser()
     
     #TODO faire ça plus joli
     # x=x[by_filter]
@@ -153,7 +152,6 @@ summarize_numeric_factor = function(x, by, funs, funs_arg, showNA, total,
     # plot(xx)
     # tibble(by=xx$expr, time=xx$time)
     
-    # browser()
     #TODO option pour garder tous les niveaux de by ?
     
     

@@ -9,8 +9,8 @@ options(width = 100)
 
 ## ----crosstable-bare------------------------------------------------------------------------------
 library(crosstable)
-ct = crosstable(mtcars2, everything())
-ct %>% head(10) %>% 
+ct = crosstable(iris2, everything()) #or simply `crosstable(iris2)`
+ct %>% 
   as_flextable(keep_id=TRUE)
 
 ## ----crosstable-names-----------------------------------------------------------------------------
@@ -23,11 +23,11 @@ crosstable(mtcars2, any_of(qsec), by=vs) %>%
   as_flextable(keep_id=TRUE)
 
 ## ----crosstable-negation--------------------------------------------------------------------------
-crosstable(mtcars2, c(-mpg, -cyl), by=vs) %>% head(8) %>% #-c(mpg, cyl) would also work
+crosstable(mtcars2, c(-mpg, -cyl, -1), by=vs) %>% head(8) %>% #-c(mpg, cyl, 1) would also work
   as_flextable(keep_id=TRUE)
 
 ## ----crosstable-indice----------------------------------------------------------------------------
-crosstable(mtcars2, 1:3, by=vs) %>% 
+crosstable(mtcars2, 2:4, by=vs) %>% 
   as_flextable(keep_id=TRUE)
 
 ## ----crosstable-helpers1--------------------------------------------------------------------------
@@ -45,7 +45,7 @@ crosstable(mtcars2, matches("^d|g.{3}$")) %>%
   as_flextable(keep_id=TRUE)
 
 ## ----crosstable-functions1------------------------------------------------------------------------
-crosstable(mtcars2, where(is.character)) %>% 
+crosstable(mtcars2, c(where(is.character), where(is.factor), -model)) %>% 
   as_flextable(keep_id=TRUE)
 
 ## ----crosstable-functions2------------------------------------------------------------------------

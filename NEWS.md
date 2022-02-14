@@ -1,10 +1,37 @@
 <!-- https://style.tidyverse.org/news.html -->
 
+# crosstable 0.4.0 <sub><sup>(?)</sup></sub>
+
+#### New features
+
+* You can now use basic markdown formats in `body_add_normal()`: \*\*bold\*\*, \*italic\*, \_underlined\_, and `code`.
+* Add `keep_id` argument to `compact.crosstable()`, which enabled `as_flextable(compact=TRUE, keep_id=TRUE)`
+* You can use `as_flextable(header_show_n_pattern)` to change the glue pattern of these group sizes. The default is `{.col} (N={.n})`; you can use `{.col_key}` and `{.col_val}` when `by` has multiple strata. 
+* Functions `body_add_table_legend()` and `body_add_figure_legend()` earn an argument `legend_prefix`. Useful when set through global options, for instance to make every table/figure start with the name of the study.
+* `crosstable_options()` can handle new options for all those new features. 
+
+#### Improvements
+
+* You can now set normal style directly in `body_add_normal()` (it was only doable through options before).
+* Removed the "variable" header in compacted crosstables.
+* Dataset `mtcars2` is now a tibble, with its rownames as a column named "model".
+* `as_flextable(by_header=FALSE)` now remove the group header (if `by` has only one stratum). 
+* `as_flextable(header_show_n)` now also works if `by` has multiple strata. 
+* `as_flextable(header_show_n=TRUE)` adds group size for all groups.
+
+#### Bug fixes
+
+* Fixed a bug when numeric variables are treated as categorical (failed if one had a `NA` value).
+* Fixed a bug that caused `body_add_normal()` to add an extra empty paragraph if there was a reference in the text.
+* Fixed a bug so that `body_add_normal()` can be used without argument.
+* Fixed a bug in `effect=TRUE` when some groups were present in `table()` but not in `glm()` due to missing values.
+
+
 # crosstable 0.3.2 <sub><sup>(2021-11-27)</sup></sub>
 
 #### New features
 
-* Global options management is now easier thanks to `crosstable_options()` and autocompletion. Almost every argument can now be set using options. See `?crosstable_options` for further details
+* Global options management is now easier thanks to `crosstable_options()` and autocompletion. Almost every argument can now be set using options. See `?crosstable_options` for further details.
 * You can also use `crosstable_peek_options()` to see which crosstable option is currently set.
 * New argument `num_digits` in `crosstable()`. It was about time!
 * New argument `header_show_n` for `as_flextable()`, which adds the group size (`N=xx`) to the header of the flextable.

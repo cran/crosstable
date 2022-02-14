@@ -93,6 +93,17 @@ assert_is_installed = function(pkg, fun) {
     invisible(pkg)
 }
 
+#' @importFrom glue glue
+#' @importFrom rlang abort
+#' @keywords internal
+#' @noRd
+assert_survival_is_installed = function() {
+    if(!requireNamespace("survival", quietly=TRUE)) {
+        abort(glue('Package "survival" is needed for survival data to be described using crosstable.'),
+              class="missing_package_error") # nocov
+    }
+}
+
 
 
 # Arguments name-check ----------------------------------------------------
@@ -111,6 +122,25 @@ check_dots_unnamed = function(){
                 x="Did you misspecify an argument?",
                 i=glue("Named components: '{named}'")), 
               class="rlib_error_dots_named")
+    }
+}
+
+#' @importFrom rlang abort
+#' @importFrom glue glue glue_collapse
+#' @source mimick ellipsis::check_dots_empty
+#' @keywords internal
+#' @noRd
+check_dots_empty = function(){
+    dots = substitute(list(...), env=parent.frame())
+    if(length(eval(dots))>0){
+        print(dots)
+        caller = as.character(sys.call(-1)[1])
+        dotnames = names(dots)
+        named = dotnames[dotnames!=""] %>% glue_collapse("', '", last="', and '")
+        abort(c(glue("Components of `...` should be empty in {caller}()."),
+                "Did you misspecify or forget the name of an argument?",
+                i=glue("Named components: '{named}'")), #TODO aussi unnamed
+              class="rlib_error_dots_nonempty")
     }
 }
 
@@ -235,6 +265,12 @@ parse_funs = function(funs){
 }
 
 
+#' @importFrom stringr str_match_all
+#' @keywords internal
+#' @noRd
+get_glue_vars = function(.x){
+    str_match_all(.x, "\\{(.*?)\\}")[[1]][,2]
+}
 
 # Class checking ----------------------------------------------------------
 
@@ -256,9 +292,18 @@ is.character.or.factor = function(x) {
 #' @author David Hajage
 #' @keywords internal
 #' @noRd
-#' @importFrom  survival is.Surv
 is.numeric.and.not.surv = function(x) {
     is.numeric(x) & !is.Surv(x)
+}
+
+#' test
+#'
+#' @param x x
+#' 
+#' @keywords internal
+#' @noRd
+is.Surv = function(x) {
+    inherits(x, "Surv")
 }
 
 #' test
@@ -380,7 +425,6 @@ confint_proportion = function(p, n,
     a = 1-level
     method = match.arg(method)
     z = qnorm(1-a/2)
-    # browser()
     if(method=="wilson"){
         z2 = z * z
         p1 = p + 0.5 * z2/n
@@ -420,6 +464,49 @@ str_wrap2 = function(x, width, ...){
            str_replace_all(x, paste0("(.{",width,"})"), "\\1\n"))
 }
 
+
+
+#' @keywords internal
+#' @noRd
+#' @examples
+#' x=1:15;y="foobar"
+#' rec(x,y, sep=", ")
+rec = function(..., sep=getOption("rec_sep", "\n"), sep_int=getOption("rec_sep", ", "), 
+               glue_pattern="{.name} = {.value}", 
+               max_length=getOption("rec_max_length", 10), .envir = parent.frame()){
+    l = as.list(substitute(list(...)))[-1L] %>% unlist() %>% set_names()
+    ll = map(l, eval, envir=.envir)
+    tmp = ll %>% imap(~{
+        .x = as.character(unlist(.x))
+        if(length(.x)>max_length) {
+            .x = c(.x[1:max_length], "...")
+        }
+        if(length(.x)>1){
+            paste0("[", glue_collapse(.x, sep=sep_int), "]")
+        } else {
+            .x
+        }
+    })
+    rtn = glue(glue_pattern, .name=names(tmp), .value=tmp) %>% 
+        glue_collapse(sep=sep)
+    rtn
+}
+
+
+
+#' enhanced base::factor() with coherance warnings
+#' @keywords internal
+#' @noRd
+#' @source https://github.com/tidyverse/forcats/issues/299
+fct = function(x=character(), levels, labels=levels, ...){
+    miss_x = !x %in% levels
+    if(any(miss_x)){
+        miss_x_s = unique(x[miss_x]) %>% glue_collapse(", ")
+        warn(c("Unknown factor level in `x`, NA generated.", 
+               x=glue("Unknown levels: {miss_x_s}")))
+    }
+    factor(x, levels, labels, ...)
+}
 
 
 #' @source adapted from gtools::mixedorder() v3.9.2

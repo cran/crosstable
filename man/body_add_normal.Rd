@@ -5,7 +5,14 @@
 \alias{body_add_glued}
 \title{Add a new paragraph with default style}
 \usage{
-body_add_normal(doc, ..., .sep = "", squish = TRUE)
+body_add_normal(
+  doc,
+  ...,
+  .sep = "",
+  style = NULL,
+  squish = TRUE,
+  parse = c("ref", "format", "code")
+)
 }
 \arguments{
 \item{doc}{the doc object (created with the \code{read_docx} function of \code{officer} package)}
@@ -14,7 +21,11 @@ body_add_normal(doc, ..., .sep = "", squish = TRUE)
 
 \item{.sep}{Separator used to separate elements.}
 
+\item{style}{Style for normal text. Best set with \code{\link[=crosstable_options]{crosstable_options()}}.}
+
 \item{squish}{Whether to squish the result (remove trailing and repeated spaces). Default to \code{TRUE}. Allows to add multiline paragraph without breaking the string.}
+
+\item{parse}{which format to parse. Default to all formats (\code{c("ref", "format", "code")}).}
 }
 \value{
 a new doc object
@@ -22,8 +33,10 @@ a new doc object
 The docx object \code{doc}
 }
 \description{
-Add a new paragraph in an \code{officer} document with default style. Variables can be inserted as multiple strings (\code{paste()} style) or enclosed by braces (\code{glue()} style).
-References to any bookmark can be inserted using the syntax "\\@ref(bookmark)". See an example in \code{\link[=body_add_table_legend]{body_add_table_legend()}}.
+Add a new paragraph in an \code{officer} document with default style.\cr
+Variables can be inserted in the text as multiple strings (\code{paste()} style) or enclosed by braces (\code{glue()} style).  \cr
+Basic markdown syntax is available: \verb{**bold**}, \verb{*italic*}, and \verb{_underlined_}. \cr
+References to any bookmark can be inserted using the syntax \verb{\\\\@ref(bookmark)}.
 }
 \examples{
 library(officer)
@@ -34,11 +47,19 @@ info_rows = c("Also, table iris has {nrow(iris)} rows.",
 doc = read_docx()  \%>\% 
     body_add_normal("Table iris has", ncol(iris), "columns.", .sep=" ") \%>\% #paste style
     body_add_normal("However, table mtcars has {ncol(mtcars)} columns") \%>\% #glue style
-    body_add_normal(info_rows)                                              #vector style
-#write_and_open(doc)
+    body_add_normal(info_rows)                                          \%>\% #vector style
+    body_add_normal("")                                              
+doc = doc \%>\% 
+    body_add_normal("You can write text in *italic1*, _underlined1_, **bold1**, and `code`, 
+                    and you can also add * **references** *, for instance a ref to Table 
+                    \\\\@ref(my_table). Multiple spaces are ignored (squished) so that you 
+                    can enter multiline text.") \%>\% 
+    body_add_normal() \%>\% 
+    body_add_normal("Here I should use `body_add_crosstable()` to add a table before the 
+                     legend.") \%>\% 
+    body_add_table_legend("My pretty table", bookmark="my_table")
+write_and_open(doc)
 }
 \author{
-Dan Chaltiel
-
 Dan Chaltiel
 }
