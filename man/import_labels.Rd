@@ -10,8 +10,8 @@ import_labels(
   data_label,
   name_from = "name",
   label_from = "label",
-  verbose_name = FALSE,
-  verbose_label = FALSE,
+  warn_name = FALSE,
+  warn_label = FALSE,
   verbose = deprecated()
 )
 
@@ -26,9 +26,9 @@ save_labels(.tbl)
 
 \item{label_from}{in \code{data_label}, which column to get the variable label (default to \code{label})}
 
-\item{verbose_name}{if TRUE, displays a warning if a variable name is not found in \code{data_label}}
+\item{warn_name}{if TRUE, displays a warning if a variable name is not found in \code{data_label}}
 
-\item{verbose_label}{if TRUE, displays a warning if a label is not found in \code{.tbl}}
+\item{warn_label}{if TRUE, displays a warning if a label is not found in \code{.tbl}}
 
 \item{verbose}{deprecated}
 }
@@ -50,23 +50,21 @@ iris_label = data.frame(
   label=c("Length of Sepals", "Width of Sepals",
           "Length of Petals", "Width of Petals", "Specie name")
 )
-iris \%>\% 
-  import_labels(iris_label) \%>\% 
+iris \%>\%
+  import_labels(iris_label) \%>\%
   crosstable
-  
+
 #save the labels, use some dplyr label-removing function, then retrieve the labels
 library(dplyr)
 mtcars2 \%>\%
-  save_labels() \%>\% 
+  save_labels() \%>\%
   transmute(disp=as.numeric(disp)+1) \%>\%
-  import_labels(verbose_label=FALSE) \%>\% #
+  import_labels(warn_label=FALSE) \%>\% #
   crosstable(disp)
 }
 \seealso{
 \code{\link[=get_label]{get_label()}}, \code{\link[=set_label]{set_label()}}, \code{\link[=remove_label]{remove_label()}}, \code{\link[=save_labels]{save_labels()}}
 }
 \author{
-Dan Chaltiel
-
 Dan Chaltiel
 }

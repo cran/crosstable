@@ -1,31 +1,26 @@
 
 #' Default arguments for calculating and displaying tests in [crosstable()]
-#' 
+#'
 #' This is the starting point for refining the testing algorithm used in crosstable. Users can provide their own functions for test.~.
 #'
-#' @return A list with testing parameters:
-#' \itemize{
-#'   \item `test_summarize` - a function of two arguments (continuous variable and grouping variable), used to compare continuous variable. Must return a list of two components: `p.value` and `method`. See [`test_summarize_auto`] or [`test_summarize_linear_contrasts`] for some examples of such functions.
-#'   
-#'   \item `test_tabular` - a function of two arguments (two categorical variables), used to test association between two categorical variables.  Must return a list of two components: `p.value` and `method`. See [`test_tabular_auto`] for example.
-#'   
-#'   \item `test_correlation` - a function of three arguments (two continuous variables plus the correlation method), used to test association between two continuous variables.  Like `cor.test`, it must return a list of at least `estimate`, `p.value`, and `method`, with also `conf.int` optionally. See [`test_correlation_auto`] for example.
-#'   
-#'   \item `test_survival` - a function of one argument (the formula `surv~by`), used to compare survival estimations. Must return a list of two components: `p.value` and `method`. See [`test_survival_logrank`] for example.
-#'   
-#'   \item `test_display` - function used to display the test result. See [`display_test`].
-#'   \item `plim` - number of digits for the p value
-#'   \item `show_method` - whether to display the test name (logical)
-#' } 
-#' 
+#' @param test_summarize a function of two arguments (continuous variable and grouping variable), used to compare continuous variable. Must return a list of two components: `p.value` and `method`. See [`test_summarize_auto`] or [`test_summarize_linear_contrasts`] for some examples of such functions.
+#' @param test_tabular a function of two arguments (two categorical variables), used to test association between two categorical variables.  Must return a list of two components: `p.value` and `method`. See [`test_tabular_auto`] for example.
+#' @param test_correlation a function of three arguments (two continuous variables plus the correlation method), used to test association between two continuous variables.  Like `cor.test`, it must return a list of at least `estimate`, `p.value`, and `method`, with also `conf.int` optionally. See [`test_correlation_auto`] for example.
+#' @param test_survival a function of one argument (the formula `surv~by`), used to compare survival estimations. Must return a list of two components: `p.value` and `method`. See [`test_survival_logrank`] for example.
+#' @param test_display function used to display the test result. See [`display_test`].
+#' @param plim number of digits for the p value.
+#' @param show_method whether to display the test name (logical).
+#'
+#' @return A list with test parameters
+#'
 #' @aliases test_args
-#' 
+#'
 #' @seealso [`test_summarize_auto`], [`test_tabular_auto`], [`test_survival_logrank`], [`test_summarize_linear_contrasts`], [`display_test`]
-#' 
+#'
 #' @export
 #' @author Dan Chaltiel
-#' 
-#' 
+#'
+#'
 #' @examples
 #' library(dplyr)
 #' my_test_args=crosstable_test_args()
@@ -33,15 +28,21 @@
 #' iris %>%
 #'   mutate(Petal.Width.qt = paste0("Q", ntile(Petal.Width, 5)) %>% ordered()) %>%
 #'   crosstable(Petal.Length ~ Petal.Width.qt, test=TRUE, test_args = my_test_args)
-crosstable_test_args = function(){
+crosstable_test_args = function(test_summarize = test_summarize_auto,
+                                test_tabular = test_tabular_auto,
+                                test_correlation = test_correlation_auto,
+                                test_survival = test_survival_logrank,
+                                test_display = display_test,
+                                plim = 4,
+                                show_method = TRUE){
   list(
-    test_summarize = test_summarize_auto, 
-    test_tabular = test_tabular_auto, 
-    test_correlation = test_correlation_auto, 
-    test_survival = test_survival_logrank, 
-    test_display = display_test, 
-    plim = 4, 
-    show_method = TRUE
+    test_summarize = test_summarize,
+    test_tabular = test_tabular,
+    test_correlation = test_correlation,
+    test_survival = test_survival,
+    test_display = test_display,
+    plim = plim,
+    show_method = show_method
   )
 }
 
@@ -94,7 +95,7 @@ test_tabular_auto = function(x, y) {
     test = chisq.test(x, y, correct = FALSE)
   else
     test = fisher.test(x, y)
-  
+
   p = test$p.value
   method = test$method
   list(p.value = p, method = method)
@@ -117,13 +118,13 @@ test_tabular_auto = function(x, y) {
 test_summarize_auto = function(x, g) {
   ng = table(g)
   x = as.numeric(x)
-  
+
   if (length(ng) <= 1) {
     return(list(p.value=NULL, method=NULL))
-  } 
-  
+  }
+
   normg = test_normality(x, g)
-  
+
   if (any(normg < 0.05)) {
     if (length(ng) == 2) {
       type = "wilcox"
@@ -153,9 +154,9 @@ test_summarize_auto = function(x, g) {
                 t.equalvar = t.test(x ~ g, var.equal = TRUE),
                 a.unequalvar = oneway.test(x ~ g, var.equal = FALSE),
                 a.equalvar = oneway.test(x ~ g, var.equal = TRUE))
-  
-  
-  list(p.value = test$p.value, 
+
+
+  list(p.value = test$p.value,
        method = test$method)
 }
 
@@ -175,14 +176,14 @@ test_summarize_auto = function(x, g) {
 test_correlation_auto = function(x, by, method) {
   exact=TRUE
   ct = withCallingHandlers(
-    tryCatch(cor.test(x, by, method = method)), 
+    tryCatch(cor.test(x, by, method = method)),
     warning=function(m) {
       if(str_detect(conditionMessage(m), "exact p-value"))
-        exact<<-FALSE 
+        exact<<-FALSE
       invokeRestart("muffleWarning")
     }
   )
-  
+
   if(method %in% c("kendall", "spearman")){
     if(!exact){
       ct$method = paste0(ct$method, ", normal approximation")
@@ -204,7 +205,7 @@ test_correlation_auto = function(x, by, method) {
 #' @export
 #' @importFrom stats pchisq
 test_survival_logrank = function(formula) {
-  assert_survival_is_installed()
+  check_installed("survival", reason="for survival data to be described using `crosstable()`.")
   survdiff.obj = survival::survdiff(formula)
   p = 1-pchisq(survdiff.obj$chisq, length(survdiff.obj$n)-1)
   list(p.value = p, method = "Logrank test")
@@ -232,7 +233,7 @@ test_survival_logrank = function(formula) {
 #'   mutate(Petal.Width.qt = paste0("Q", ntile(Petal.Width, 5)) %>% ordered()) %>%
 #'   crosstable(Petal.Length ~ Petal.Width.qt, test=TRUE, test_args = my_test_args)
 test_summarize_linear_contrasts = function(x, y){
-  assert_is_installed("gmodels", "test_summarize_linear_contrasts()")
+  check_installed("gmodels", reason="for function `test_summarize_linear_contrasts()` to work.")
   x = as.numeric(x)
   stopifnot(is.ordered(y))
   levels_seq = 1:length(levels(y))
@@ -248,9 +249,9 @@ test_summarize_linear_contrasts = function(x, y){
 
 
 #' Test for normality of `y` in subgroups `g`.
-#' 
+#'
 #' TODO auto normality testing may require some more thought...
-#' 
+#'
 #' @keywords internal
 #' @importFrom stats shapiro.test na.omit
 # @importFrom nortest ad.test
@@ -269,7 +270,7 @@ test_normality = function(x, g){
       ad.test(x)$p.value
     })
   }
-  
+
   normg
 }
 
@@ -281,7 +282,7 @@ test_normality = function(x, g){
 #' @noRd
 wilcox_test2 = function(x, g) {
   test = withCallingHandlers(
-    tryCatch(wilcox.test(x ~ g, correct = FALSE, exact=NULL)), 
+    tryCatch(wilcox.test(x ~ g, correct = FALSE, exact=NULL)),
     warning=function(m) {
       if(!str_detect(conditionMessage(m), "exact p-value")) {
         warning(m)
@@ -296,7 +297,7 @@ wilcox_test2 = function(x, g) {
 # dummy_data3=dummy_data[c(1:150),] %>% rbind(list(25,0.003,29,"A","C","A"))
 # dummy_data4=dummy_data[c(1:48,25),]
 # dummy_data5=dummy_data[c(1:150,25),] %>% rbind(list(25,0.003,29,"A","C","A"))
-# 
+#
 # #n<50, no ties, exact test
 # wilcox.test(dummy_data2$x_exp ~ dummy_data2$tmt2, correct=FALSE, exact=NULL)$method
 # wilcox_test2(dummy_data2$x_exp, dummy_data2$tmt2)$method
@@ -309,26 +310,26 @@ wilcox_test2 = function(x, g) {
 # #n>50, ties, not exact test
 # wilcox.test(dummy_data5$x_exp ~ dummy_data5$tmt2, correct=FALSE, exact=NULL)$method
 # wilcox_test2(dummy_data5$x_exp, dummy_data5$tmt2)$method
-# 
+#
 # # wilcox.test(dummy_data2$x_exp ~ dummy_data2$tmt2, correct=TRUE, exact=NULL)$method
 # # wilcox.test(dummy_data2$x_exp ~ dummy_data2$tmt2, correct=TRUE, exact=TRUE)$method
 # # wilcox.test(dummy_data2$x_exp ~ dummy_data2$tmt2, correct=TRUE, exact=FALSE)$method
 # # wilcox.test(dummy_data2$x_exp ~ dummy_data2$tmt2, correct=FALSE, exact=NULL)$method
 # # wilcox.test(dummy_data2$x_exp ~ dummy_data2$tmt2, correct=FALSE, exact=TRUE)$method
 # # wilcox.test(dummy_data2$x_exp ~ dummy_data2$tmt2, correct=FALSE, exact=FALSE)$method
-# 
+#
 # # wilcox.test(dummy_data3$x_exp ~ dummy_data3$tmt2, correct=TRUE, exact=NULL)$method
 # # wilcox.test(dummy_data3$x_exp ~ dummy_data3$tmt2, correct=TRUE, exact=TRUE)$method
 # # wilcox.test(dummy_data3$x_exp ~ dummy_data3$tmt2, correct=TRUE, exact=FALSE)$method
 # # wilcox.test(dummy_data3$x_exp ~ dummy_data3$tmt2, correct=FALSE, exact=NULL)$method
 # # wilcox.test(dummy_data3$x_exp ~ dummy_data3$tmt2, correct=FALSE, exact=TRUE)$method
 # # wilcox.test(dummy_data3$x_exp ~ dummy_data3$tmt2, correct=FALSE, exact=FALSE)$method
-# 
+#
 # wilcox.test(mtcars3$disp ~ mtcars3$vs, correct=TRUE, exact=TRUE)$method
 # wilcox.test(mtcars3$disp ~ mtcars3$vs, correct=TRUE, exact=FALSE)$method
 # wilcox.test(mtcars3$disp ~ mtcars3$vs, correct=FALSE, exact=TRUE)$method
 # wilcox.test(mtcars3$disp ~ mtcars3$vs, correct=FALSE, exact=FALSE)$method
-# 
+#
 # wilcox_test2(dummy_data$x_exp, dummy_data$tmt2)
 # wilcox_test2(dummy_data2$x_exp, dummy_data2$tmt2)
 # wilcox_test2(dummy_data3$x_exp, dummy_data3$tmt2)
@@ -352,12 +353,12 @@ test_summarize_auto.dan = function (x, g) {
   } else {
     if(length(x)<3){ #shapiro.test throws an error if n<3
       shapirog=0
-    } else if(length(x)<5000){ 
+    } else if(length(x)<5000){
       shapirog = tapply(x, g, function(x) shapiro.test(x)$p.value)
     } else { #on large samples, shapiro.test is not relevant
       shapirog=1
     }
-    
+
     if (any(ng < 30) | any(shapirog < 0.05)) {
       if (length(ng) == 2) {
         type = "wilcox"
@@ -380,12 +381,12 @@ test_summarize_auto.dan = function (x, g) {
         type = "a.equalvar"
       }
     }
-    test = switch(type, 
-                  wilcox = wilcox.test(x ~ g, correct = FALSE), 
-                  kruskal = kruskal.test(x, g), 
-                  t.unequalvar = t.test(x ~ g, var.equal = FALSE), 
-                  t.equalvar = t.test(x ~ g, var.equal = TRUE), 
-                  a.unequalvar = oneway.test(x ~ g, var.equal = FALSE), 
+    test = switch(type,
+                  wilcox = wilcox.test(x ~ g, correct = FALSE),
+                  kruskal = kruskal.test(x, g),
+                  t.unequalvar = t.test(x ~ g, var.equal = FALSE),
+                  t.equalvar = t.test(x ~ g, var.equal = TRUE),
+                  a.unequalvar = oneway.test(x ~ g, var.equal = FALSE),
                   a.equalvar = oneway.test(x ~ g, var.equal = TRUE))
     p = test$p.value
     method = test$method
@@ -406,14 +407,14 @@ test_tabular_auto2 = function (x, y) {
   if(is.ordered(x) & is.ordered(y)){
     test = cor.test(as.numeric(x), as.numeric(y), method = "spearman", exact = FALSE)
   } else if((is.ordered(x) | is.ordered(y)) & any(dim(tab)==2)){
-    # assert_is_installed("DescTools", "CochranArmitageTest() in test_tabular_auto2()")
+    # check_installed("DescTools", reason="for function `CochranArmitageTest()` in `test_tabular_auto2()` to work.")
     # test = DescTools::CochranArmitageTest(tab, alternative = "two.sided")
     test = CochranArmitageTest(tab, alternative = "two.sided")
   } else{
     exp = rowSums(tab) %*% t(colSums(tab))/sum(tab)
-    if (any(dim(table(x, y)) == 1)) 
+    if (any(dim(table(x, y)) == 1))
       test = list(p.value = NULL, method = NULL)
-    else if (all(exp >= 5)) 
+    else if (all(exp >= 5))
       test = suppressWarnings(chisq.test(x, y, correct = FALSE))
     else test = fisher.test(x, y)
   }

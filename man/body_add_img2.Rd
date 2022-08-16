@@ -10,6 +10,7 @@ body_add_img2(
   width,
   height,
   units = getOption("crosstable_units", "in"),
+  style = getOption("crosstable_style_image", doc$default_styles$paragraph),
   ...
 )
 }
@@ -21,6 +22,8 @@ body_add_img2(
 \item{width, height}{width and height. Can be abbreviated to w and h.}
 
 \item{units}{units for width and height}
+
+\item{style}{paragraph style}
 
 \item{...}{other arguments to be passed to \code{\link[officer:body_add_img]{officer::body_add_img()}}}
 }
@@ -36,7 +39,7 @@ if(file.exists(img.file)){
     library(officer)
     options(crosstable_units="cm")
     doc = read_docx() \%>\%
-        body_add_normal("This is the R logo.") \%>\% 
+        body_add_normal("This is the R logo.") \%>\%
         body_add_img2(img.file, h=7.6, w=10, style="centered") #or units="cm" without options
     #write_and_open(doc)
 }

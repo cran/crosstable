@@ -624,7 +624,7 @@
       9   cyl      Number of cylinders               6           0 (0%)
       10  cyl      Number of cylinders               8           0 (0%)
       11  cyl      Number of cylinders              NA                2
-      12  cyl      Number of cylinders           Total       9 (35.00%)
+      12  cyl      Number of cylinders           Total       9 (37.50%)
       13 surv Dummy survival (disp/am)             t=0       1.00 (0/9)
       14 surv Dummy survival (disp/am)           t=100       0.44 (5/4)
       15 surv Dummy survival (disp/am)           t=200       0.17 (2/1)
@@ -642,7 +642,7 @@
       9       1 (100.00%)                3
       10     11 (100.00%)                2
       11                2                1
-      12      15 (65.00%)                8
+      12      15 (62.50%)                8
       13      1.00 (0/15)       1.00 (0/8)
       14      1.00 (0/15)       1.00 (0/8)
       15      0.73 (4/11)       1.00 (0/4)
@@ -685,7 +685,7 @@
       9   cyl      Number of cylinders               6           0 (0%)
       10  cyl      Number of cylinders               8           0 (0%)
       11  cyl      Number of cylinders              NA                2
-      12  cyl      Number of cylinders           Total       9 (35.00%)
+      12  cyl      Number of cylinders           Total       9 (37.50%)
       13 surv Dummy survival (disp/am)             t=0       1.00 (0/9)
       14 surv Dummy survival (disp/am)           t=100       0.44 (5/4)
       15 surv Dummy survival (disp/am)           t=200       0.17 (2/1)
@@ -703,7 +703,7 @@
       9       1 (100.00%)                3       4 (14.81%)
       10     11 (100.00%)                2      13 (48.15%)
       11                2                1                5
-      12      15 (65.00%)                8     32 (100.00%)
+      12      15 (62.50%)                8     32 (100.00%)
       13      1.00 (0/15)       1.00 (0/8)      1.00 (0/32)
       14      1.00 (0/15)       1.00 (0/8)      0.84 (5/27)
       15      0.73 (4/11)       1.00 (0/4)      0.64 (6/16)
@@ -948,7 +948,7 @@
       5 cyl Number of cylinders        6     0 (0%)  1 (100.00%)  3   4 (14.81%)
       6 cyl Number of cylinders        8     0 (0%) 11 (100.00%)  2  13 (48.15%)
       7 cyl Number of cylinders       NA          2            2  1            5
-      8 cyl Number of cylinders    Total 9 (35.00%)  15 (65.00%)  8 32 (100.00%)
+      8 cyl Number of cylinders    Total 9 (37.50%)  15 (62.50%)  8 32 (100.00%)
     Code
       as_flextable(x0)
     Output
@@ -975,7 +975,7 @@
       5 cyl Number of cylinders        6     0 (0%)  1 (100.00%)  3   4 (14.81%)
       6 cyl Number of cylinders        8     0 (0%) 11 (100.00%)  2  13 (48.15%)
       7 cyl Number of cylinders       NA          2            2  1            5
-      8 cyl Number of cylinders    Total 9 (35.00%)  15 (65.00%)  8 32 (100.00%)
+      8 cyl Number of cylinders    Total 9 (37.50%)  15 (62.50%)  8 32 (100.00%)
     Code
       as_flextable(x1)
     Output
@@ -1002,7 +1002,7 @@
       5 cyl Number of cylinders        6      0 (0%)   1 (7.69%)  3   4 (14.81%)
       6 cyl Number of cylinders        8      0 (0%) 11 (84.62%)  2  13 (48.15%)
       7 cyl Number of cylinders       NA           2           2  1            5
-      8 cyl Number of cylinders    Total  9 (35.00%) 15 (65.00%)  8 32 (100.00%)
+      8 cyl Number of cylinders    Total  9 (37.50%) 15 (62.50%)  8 32 (100.00%)
     Code
       as_flextable(x2)
     Output
@@ -1029,7 +1029,7 @@
       5 cyl Number of cylinders        6     0 (0%)   1 (5.00%)  3   4 (14.81%)
       6 cyl Number of cylinders        8     0 (0%) 11 (55.00%)  2  13 (48.15%)
       7 cyl Number of cylinders       NA          2           2  1            5
-      8 cyl Number of cylinders    Total 9 (35.00%) 15 (65.00%)  8 32 (100.00%)
+      8 cyl Number of cylinders    Total 9 (37.50%) 15 (62.50%)  8 32 (100.00%)
     Code
       as_flextable(x3)
     Output
@@ -1083,7 +1083,7 @@
       5 cyl Number of cylinders        6              0 (0% / 0% / 0%)
       6 cyl Number of cylinders        8              0 (0% / 0% / 0%)
       7 cyl Number of cylinders       NA                             2
-      8 cyl Number of cylinders    Total                    9 (35.00%)
+      8 cyl Number of cylinders    Total                    9 (37.50%)
                                vshaped NA        Total
       1   9 (37.50% / 81.82% / 60.00%)  8  19 (59.38%)
       2   6 (25.00% / 46.15% / 40.00%)  0  13 (40.62%)
@@ -1092,7 +1092,7 @@
       5    1 (5.00% / 100.00% / 7.69%)  3   4 (14.81%)
       6 11 (55.00% / 100.00% / 84.62%)  2  13 (48.15%)
       7                              2  1            5
-      8                    15 (65.00%)  8 32 (100.00%)
+      8                    15 (62.50%)  8 32 (100.00%)
     Code
       as_flextable(x5)
     Output
@@ -1125,7 +1125,7 @@
       5 cyl Number of cylinders        6          0 (0% / 0%)   1 (100.00% / 7.69%)
       6 cyl Number of cylinders        8          0 (0% / 0%) 11 (100.00% / 84.62%)
       7 cyl Number of cylinders       NA                    2                     2
-      8 cyl Number of cylinders    Total           9 (35.00%)           15 (65.00%)
+      8 cyl Number of cylinders    Total           9 (37.50%)           15 (62.50%)
         NA        Total
       1  8  19 (59.38%)
       2  0  13 (40.62%)
@@ -1159,121 +1159,112 @@
 # Percent pattern
 
     Code
-      x0 = crosstable(mtcars3, cyl, percent_pattern = "N={n} \nrow={p_row}, col={p_col}")
+      x0 = crosstable(mtcars3, cyl, percent_digits = 0, total = TRUE, showNA = "always",
+        percent_pattern = ULTIMATE_PATTERN)
       as.data.frame(x0)
     Output
-        .id               label variable                          value
-      1 cyl Number of cylinders        4 N=10 \nrow=100.00%, col=37.04%
-      2 cyl Number of cylinders        6  N=4 \nrow=100.00%, col=14.81%
-      3 cyl Number of cylinders        8 N=13 \nrow=100.00%, col=48.15%
-      4 cyl Number of cylinders       NA                              5
+        .id               label variable
+      1 cyl Number of cylinders        4
+      2 cyl Number of cylinders        6
+      3 cyl Number of cylinders        8
+      4 cyl Number of cylinders       NA
+      5 cyl Number of cylinders    Total
+                                                                                                                            value
+      1 N=10\nCell: p = 37% (10/27) [95%CI 22%; 56%]\nCol: p = 37% (10/27) [95%CI 22%; 56%]\nRow:p = 37% (10/27) [95%CI 22%; 56%]
+      2        N=4\nCell: p = 15% (4/27) [95%CI 6%; 32%]\nCol: p = 15% (4/27) [95%CI 6%; 32%]\nRow:p = 15% (4/27) [95%CI 6%; 32%]
+      3 N=13\nCell: p = 48% (13/27) [95%CI 31%; 66%]\nCol: p = 48% (13/27) [95%CI 31%; 66%]\nRow:p = 48% (13/27) [95%CI 31%; 66%]
+      4                                                                                                                         5
+      5                                                                                                                 32 (100%)
     Code
-      as_flextable(x0)
-    Output
-      a flextable object.
-      col_keys: `label`, `variable`, `value` 
-      header has 1 row(s) 
-      body has 4 row(s) 
-      original dataset sample: 
-        .id               label variable                          value
-      1 cyl Number of cylinders        4 N=10 \nrow=100.00%, col=37.04%
-      2 cyl Number of cylinders        6  N=4 \nrow=100.00%, col=14.81%
-      3 cyl Number of cylinders        8 N=13 \nrow=100.00%, col=48.15%
-      4 cyl Number of cylinders       NA                              5
-    Code
-      x1 = crosstable(mtcars3, cyl, total = TRUE, percent_pattern = "N={n} \np[95%CI] = {p_col} [{p_col_inf}; {p_col_sup}]")
+      x1 = crosstable(mtcars3, cyl, by = am, percent_digits = 0, total = TRUE,
+        showNA = "always", percent_pattern = ULTIMATE_PATTERN)
       as.data.frame(x1)
     Output
-        .id               label variable                                     value
-      1 cyl Number of cylinders        4 N=10 \np[95%CI] = 37.04% [14.94%; 66.33%]
-      2 cyl Number of cylinders        6   N=4 \np[95%CI] = 14.81% [1.80%; 62.31%]
-      3 cyl Number of cylinders        8 N=13 \np[95%CI] = 48.15% [24.70%; 72.44%]
-      4 cyl Number of cylinders       NA                                         5
-      5 cyl Number of cylinders    Total                              32 (100.00%)
+        .id               label variable
+      1 cyl Number of cylinders        4
+      2 cyl Number of cylinders        6
+      3 cyl Number of cylinders        8
+      4 cyl Number of cylinders       NA
+      5 cyl Number of cylinders    Total
+                                                                                                                             auto
+      1       N=3\nCell: p = 11% (3/27) [95%CI 4%; 28%]\nCol: p = 18% (3/17) [95%CI 6%; 41%]\nRow:p = 30% (3/10) [95%CI 11%; 60%]
+      2        N=3\nCell: p = 11% (3/27) [95%CI 4%; 28%]\nCol: p = 18% (3/17) [95%CI 6%; 41%]\nRow:p = 75% (3/4) [95%CI 30%; 95%]
+      3 N=11\nCell: p = 41% (11/27) [95%CI 25%; 59%]\nCol: p = 65% (11/17) [95%CI 41%; 83%]\nRow:p = 85% (11/13) [95%CI 58%; 96%]
+      4                                                                                                                         2
+      5                                                                                                                  19 (59%)
+                                                                                                                       manual
+      1 N=7\nCell: p = 26% (7/27) [95%CI 13%; 45%]\nCol: p = 70% (7/10) [95%CI 40%; 89%]\nRow:p = 70% (7/10) [95%CI 40%; 89%]
+      2      N=1\nCell: p = 4% (1/27) [95%CI 1%; 18%]\nCol: p = 10% (1/10) [95%CI 2%; 40%]\nRow:p = 25% (1/4) [95%CI 5%; 70%]
+      3     N=2\nCell: p = 7% (2/27) [95%CI 2%; 23%]\nCol: p = 20% (2/10) [95%CI 6%; 51%]\nRow:p = 15% (2/13) [95%CI 4%; 42%]
+      4                                                                                                                     3
+      5                                                                                                              13 (41%)
+          NA     Total
+      1    0  10 (37%)
+      2    0   4 (15%)
+      3    0  13 (48%)
+      4    0         5
+      5 <NA> 32 (100%)
     Code
-      as_flextable(x1)
-    Output
-      a flextable object.
-      col_keys: `label`, `variable`, `value` 
-      header has 1 row(s) 
-      body has 5 row(s) 
-      original dataset sample: 
-        .id               label variable                                     value
-      1 cyl Number of cylinders        4 N=10 \np[95%CI] = 37.04% [14.94%; 66.33%]
-      2 cyl Number of cylinders        6   N=4 \np[95%CI] = 14.81% [1.80%; 62.31%]
-      3 cyl Number of cylinders        8 N=13 \np[95%CI] = 48.15% [24.70%; 72.44%]
-      4 cyl Number of cylinders       NA                                         5
-      5 cyl Number of cylinders    Total                              32 (100.00%)
-    Code
-      x2 = crosstable(mtcars3, cyl, showNA = "always", percent_pattern = "N={n} \nrow={p_row}, col={p_col}")
+      x2 = crosstable(mtcars3, c(mpg, vs, cyl), by = c(am, dummy), percent_digits = 0,
+      total = TRUE, showNA = "always", percent_pattern = ULTIMATE_PATTERN)
       as.data.frame(x2)
     Output
-        .id               label variable                          value
-      1 cyl Number of cylinders        4 N=10 \nrow=100.00%, col=37.04%
-      2 cyl Number of cylinders        6  N=4 \nrow=100.00%, col=14.81%
-      3 cyl Number of cylinders        8 N=13 \nrow=100.00%, col=48.15%
-      4 cyl Number of cylinders       NA                              5
-    Code
-      as_flextable(x2)
-    Output
-      a flextable object.
-      col_keys: `label`, `variable`, `value` 
-      header has 1 row(s) 
-      body has 4 row(s) 
-      original dataset sample: 
-        .id               label variable                          value
-      1 cyl Number of cylinders        4 N=10 \nrow=100.00%, col=37.04%
-      2 cyl Number of cylinders        6  N=4 \nrow=100.00%, col=14.81%
-      3 cyl Number of cylinders        8 N=13 \nrow=100.00%, col=48.15%
-      4 cyl Number of cylinders       NA                              5
-    Code
-      x3 = crosstable(mtcars3, c(mpg, vs, cyl), by = c(am, dummy))
-      as.data.frame(x3)
-    Output
-         .id               label   variable am=auto & dummy=dummy
-      1  mpg   Miles/(US) gallon  Min / Max           10.4 / 24.4
-      2  mpg   Miles/(US) gallon  Med [IQR]      17.3 [14.9;19.2]
-      3  mpg   Miles/(US) gallon Mean (std)            17.1 (3.8)
-      4  mpg   Miles/(US) gallon     N (NA)                19 (0)
-      5   vs              Engine   straight            2 (22.22%)
-      6   vs              Engine    vshaped            9 (60.00%)
-      7   vs              Engine         NA                     8
-      8  cyl Number of cylinders          4            3 (30.00%)
-      9  cyl Number of cylinders          6            3 (75.00%)
-      10 cyl Number of cylinders          8           11 (84.62%)
-      11 cyl Number of cylinders         NA                     2
-         am=manual & dummy=dummy
-      1              15.0 / 33.9
-      2         22.8 [21.0;30.4]
-      3               24.4 (6.2)
-      4                   13 (0)
-      5               7 (77.78%)
-      6               6 (40.00%)
-      7                        0
-      8               7 (70.00%)
-      9               1 (25.00%)
-      10              2 (15.38%)
-      11                       3
-    Code
-      as_flextable(x3)
-    Output
-      a flextable object.
-      col_keys: `label`, `variable`, `am=auto & dummy=dummy`, `am=manual & dummy=dummy` 
-      header has 2 row(s) 
-      body has 11 row(s) 
-      original dataset sample: 
-        .id             label   variable am=auto & dummy=dummy
-      1 mpg Miles/(US) gallon  Min / Max           10.4 / 24.4
-      2 mpg Miles/(US) gallon  Med [IQR]      17.3 [14.9;19.2]
-      3 mpg Miles/(US) gallon Mean (std)            17.1 (3.8)
-      4 mpg Miles/(US) gallon     N (NA)                19 (0)
-      5  vs            Engine   straight            2 (22.22%)
-        am=manual & dummy=dummy
-      1             15.0 / 33.9
-      2        22.8 [21.0;30.4]
-      3              24.4 (6.2)
-      4                  13 (0)
-      5              7 (77.78%)
+         .id               label   variable
+      1  mpg   Miles/(US) gallon  Min / Max
+      2  mpg   Miles/(US) gallon  Med [IQR]
+      3  mpg   Miles/(US) gallon Mean (std)
+      4  mpg   Miles/(US) gallon     N (NA)
+      5   vs              Engine   straight
+      6   vs              Engine    vshaped
+      7   vs              Engine         NA
+      8   vs              Engine      Total
+      9  cyl Number of cylinders          4
+      10 cyl Number of cylinders          6
+      11 cyl Number of cylinders          8
+      12 cyl Number of cylinders         NA
+      13 cyl Number of cylinders      Total
+                                                                                                             am=auto & dummy=dummy
+      1                                                                                                                10.4 / 24.4
+      2                                                                                                           17.3 [14.9;19.2]
+      3                                                                                                                 17.1 (3.8)
+      4                                                                                                                     19 (0)
+      5           N=2\nCell: p = 8% (2/24) [95%CI 2%; 26%]\nCol: p = 18% (2/11) [95%CI 5%; 48%]\nRow:p = 22% (2/9) [95%CI 6%; 55%]
+      6      N=9\nCell: p = 38% (9/24) [95%CI 21%; 57%]\nCol: p = 82% (9/11) [95%CI 52%; 95%]\nRow:p = 60% (9/15) [95%CI 36%; 80%]
+      7                                                                                                                          8
+      8                                                                                                                   19 (59%)
+      9        N=3\nCell: p = 11% (3/27) [95%CI 4%; 28%]\nCol: p = 18% (3/17) [95%CI 6%; 41%]\nRow:p = 30% (3/10) [95%CI 11%; 60%]
+      10        N=3\nCell: p = 11% (3/27) [95%CI 4%; 28%]\nCol: p = 18% (3/17) [95%CI 6%; 41%]\nRow:p = 75% (3/4) [95%CI 30%; 95%]
+      11 N=11\nCell: p = 41% (11/27) [95%CI 25%; 59%]\nCol: p = 65% (11/17) [95%CI 41%; 83%]\nRow:p = 85% (11/13) [95%CI 58%; 96%]
+      12                                                                                                                         2
+      13                                                                                                                  19 (59%)
+                                                                                                       am=manual & dummy=dummy
+      1                                                                                                            15.0 / 33.9
+      2                                                                                                       22.8 [21.0;30.4]
+      3                                                                                                             24.4 (6.2)
+      4                                                                                                                 13 (0)
+      5   N=7\nCell: p = 29% (7/24) [95%CI 15%; 49%]\nCol: p = 54% (7/13) [95%CI 29%; 77%]\nRow:p = 78% (7/9) [95%CI 45%; 94%]
+      6  N=6\nCell: p = 25% (6/24) [95%CI 12%; 45%]\nCol: p = 46% (6/13) [95%CI 23%; 71%]\nRow:p = 40% (6/15) [95%CI 20%; 64%]
+      7                                                                                                                      0
+      8                                                                                                               13 (41%)
+      9  N=7\nCell: p = 26% (7/27) [95%CI 13%; 45%]\nCol: p = 70% (7/10) [95%CI 40%; 89%]\nRow:p = 70% (7/10) [95%CI 40%; 89%]
+      10      N=1\nCell: p = 4% (1/27) [95%CI 1%; 18%]\nCol: p = 10% (1/10) [95%CI 2%; 40%]\nRow:p = 25% (1/4) [95%CI 5%; 70%]
+      11     N=2\nCell: p = 7% (2/27) [95%CI 2%; 23%]\nCol: p = 20% (2/10) [95%CI 6%; 51%]\nRow:p = 15% (2/13) [95%CI 4%; 42%]
+      12                                                                                                                     3
+      13                                                                                                              13 (41%)
+            NA            Total
+      1  no NA      10.4 / 33.9
+      2  no NA 19.2 [15.4;22.8]
+      3  no NA       20.1 (6.0)
+      4  no NA           32 (0)
+      5      0          9 (38%)
+      6      0         15 (62%)
+      7      0                8
+      8   <NA>        32 (100%)
+      9      0         10 (37%)
+      10     0          4 (15%)
+      11     0         13 (48%)
+      12     0                5
+      13  <NA>        32 (100%)
 
 # Unique numeric
 
@@ -2225,12 +2216,12 @@
       5                                                     2 (22.22%)
       6                                                     9 (60.00%)
       7                                                              4
-      8                                                    15 (45.83%)
+      8                                                    15 (46.88%)
       9                                                     1 (10.00%)
       10                                                    1 (25.00%)
       11                                                   11 (84.62%)
       12                                                             2
-      13                                                   15 (48.15%)
+      13                                                   15 (46.88%)
       14                                                   15 (46.88%)
       15                                                   15 (46.88%)
       16                                                   1.00 (0/15)
@@ -2251,7 +2242,7 @@
       31                                                        15 (0)
       32                                                   13 (48.15%)
       33                                                             2
-      34                                                   15 (48.15%)
+      34                                                   15 (46.88%)
          am=manual & gear=3
       1             NA / NA
       2          NA [NA;NA]
@@ -2295,12 +2286,12 @@
       5                                                         0 (0%)
       6                                                         0 (0%)
       7                                                              4
-      8                                                         4 (0%)
+      8                                                     4 (12.50%)
       9                                                     2 (20.00%)
       10                                                    2 (50.00%)
       11                                                        0 (0%)
       12                                                             0
-      13                                                    4 (14.81%)
+      13                                                    4 (12.50%)
       14                                                    4 (12.50%)
       15                                                    4 (12.50%)
       16                                                    1.00 (0/4)
@@ -2321,7 +2312,7 @@
       31                                                         4 (0)
       32                                                    4 (14.81%)
       33                                                             0
-      34                                                    4 (14.81%)
+      34                                                    4 (12.50%)
                                                     am=manual & gear=4
       1                                                    21.0 / 33.9
       2                                               25.1 [21.3;30.9]
@@ -2330,12 +2321,12 @@
       5                                                     6 (66.67%)
       6                                                     2 (13.33%)
       7                                                              0
-      8                                                     8 (33.33%)
+      8                                                     8 (25.00%)
       9                                                     5 (50.00%)
       10                                                        0 (0%)
       11                                                        0 (0%)
       12                                                             3
-      13                                                    8 (18.52%)
+      13                                                    8 (25.00%)
       14                                                    8 (25.00%)
       15                                                    8 (25.00%)
       16                                                    0.50 (4/4)
@@ -2356,7 +2347,7 @@
       31                                                         8 (0)
       32                                                    5 (18.52%)
       33                                                             3
-      34                                                    8 (18.52%)
+      34                                                    8 (25.00%)
          am=auto & gear=5
       1           NA / NA
       2        NA [NA;NA]
@@ -2400,12 +2391,12 @@
       5                                                     1 (11.11%)
       6                                                     4 (26.67%)
       7                                                              0
-      8                                                     5 (20.83%)
+      8                                                     5 (15.62%)
       9                                                     2 (20.00%)
       10                                                    1 (25.00%)
       11                                                    2 (15.38%)
       12                                                             0
-      13                                                    5 (18.52%)
+      13                                                    5 (15.62%)
       14                                                    5 (15.62%)
       15                                                    5 (15.62%)
       16                                                    0.80 (1/4)
@@ -2426,7 +2417,7 @@
       31                                                         5 (0)
       32                                                    5 (18.52%)
       33                                                             0
-      34                                                    5 (18.52%)
+      34                                                    5 (15.62%)
                                                                  Total
       1                                                    10.4 / 33.9
       2                                               19.2 [15.4;22.8]

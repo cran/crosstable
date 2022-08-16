@@ -18,6 +18,8 @@ Commit](https://img.shields.io/github/last-commit/DanChaltiel/crosstable)](https
 coverage](https://codecov.io/gh/DanChaltiel/crosstable/branch/main/graph/badge.svg)](https://app.codecov.io/gh/DanChaltiel/crosstable?branch=main)
 [![R build
 status](https://github.com/DanChaltiel/crosstable/workflows/R-CMD-check/badge.svg)](https://github.com/DanChaltiel/crosstable/actions)
+[![minimal R
+version](https://img.shields.io/badge/R-%E2%89%A53.1-blue.svg)](https://cran.r-project.org/)
 <!-- [![Dependencies](https://tinyverse.netlify.com/badge/crosstable)](https://cran.r-project.org/package=crosstable)  -->
 <!-- [![Build Status](https://travis-ci.org/DanChaltiel/crosstable.svg?branch=main)](https://travis-ci.org/DanChaltiel/crosstable) -->
 <!-- badges: end -->
@@ -30,15 +32,15 @@ create automatized reports.
 ## Installation
 
 ``` r
-# Install last version available on CRAN (v0.4.0)
+# Install last version available on CRAN (v0.4.1)
 install.packages("crosstable")
 
 # Install development version on Github
 devtools::install_github("DanChaltiel/crosstable", build_vignettes=TRUE)
 
 # Install specific commit or tagged version (for reproducibility purpose)
-devtools::install_github("DanChaltiel/crosstable@d30332e", build_vignettes=TRUE)
-devtools::install_github("DanChaltiel/crosstable@v0.4.0", build_vignettes=TRUE)
+devtools::install_github("DanChaltiel/crosstable@590e1bc", build_vignettes=TRUE)
+devtools::install_github("DanChaltiel/crosstable@v0.4.1", build_vignettes=TRUE)
 ```
 
 Note that, for reproducibility purpose, an even better solution would be
@@ -65,8 +67,8 @@ ct1 = crosstable(mtcars2, c(disp, vs), by=am, total="both",
 ct1
 ```
 
-<p align="center">
-<img src="man/figures/ct1_mod.png" alt="crosstable1">
+<p style="text-align: center;">
+  <img src="man/figures/ct1_mod.png" alt="crosstable1">
 </p>
 
 With only a few arguments, we did select which column to describe
@@ -105,7 +107,7 @@ ct2
 ```
 
 <p align="center">
-<img src="man/figures/ct2_mod.png" alt="crosstable2">
+  <img src="man/figures/ct2_mod.png" alt="crosstable2">
 </p>
 
 Here, the variables were selected using `tidyselect` helpers and the
