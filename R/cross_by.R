@@ -1,11 +1,14 @@
 
-#' @importFrom purrr imap_dfr map_dfr imap_chr
-#' @importFrom glue glue glue_data glue_collapse
-#' @importFrom cli qty
+#' @importFrom cli cli_abort cli_warn
+#' @importFrom dplyr filter pull
+#' @importFrom glue glue glue_data
+#' @importFrom purrr imap_dfr map_dfr
+#' @importFrom rlang env
+#' @importFrom stats na.omit
 #' @keywords internal
 #' @noRd
 cross_by = function(data_x, data_y, funs, funs_arg, percent_pattern, total, percent_digits,
-                    showNA, label, test, times, followup,
+                    showNA, label, test, times, followup, drop_levels,
                     test_args, cor_method, effect, effect_args){
   if(!is.null(data_y) && ncol(data_y)>1) cli_abort(glue("data_y has {ncol(data_y)} columns (max=1)"))
   errors = rlang::env()
@@ -35,12 +38,22 @@ cross_by = function(data_x, data_y, funs, funs_arg, percent_pattern, total, perc
                call = crosstable_caller$env)
       return(NULL)
     }
-    if(!is.list(.x)){
+    if(!is.list(.x)){ #TODO is.list pour les erreurs, mieux vaudrait une classe spéciale?
       data_x[.y] = .x
       # errors[[.y]] = data.frame(name=.y, class="list")
       # return(NULL)
     }
 
+
+    if(showNA=="no"){
+      if(is.null(data_y)){
+        data_x = data_x %>% filter(!is.na(data_x[[.y]]))
+      } else {
+        cc = !is.na(data_x[[.y]]) & !is.na(data_y[[1]])
+        data_x = data_x %>% filter(cc)
+        data_y = data_y %>% filter(cc)
+      }
+    }
 
     if(is.list(.x)){
       rtn=NULL
@@ -52,6 +65,7 @@ cross_by = function(data_x, data_y, funs, funs_arg, percent_pattern, total, perc
     } else if(is.character.or.factor(.x)){
       rtn=cross_categorical(data_x[.y], data_y, percent_pattern=percent_pattern,
                             showNA=showNA, total=total, label=label, percent_digits=percent_digits,
+                            drop_levels=drop_levels,
                             test=test, test_args=test_args, effect=effect, effect_args=effect_args)
     } else if(is.Surv(.x)){
       rtn=cross_survival(data_x[.y], data_y, times=times, followup=followup,
@@ -92,4 +106,3 @@ cross_by = function(data_x, data_y, funs, funs_arg, percent_pattern, total, perc
   rownames(rtn_tbl)=NULL
   return(rtn_tbl)
 }
-

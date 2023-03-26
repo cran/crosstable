@@ -10,8 +10,10 @@ crosstable_options(
   only_round = FALSE,
   verbosity_autotesting = "default",
   verbosity_duplicate_cols = "default",
+  crosstable_fishertest_B = 1e+05,
   total,
   percent_pattern,
+  margin,
   percent_digits,
   num_digits,
   showNA,
@@ -19,6 +21,7 @@ crosstable_options(
   funs,
   funs_arg,
   cor_method,
+  drop_levels,
   unique_numeric,
   date_format,
   times,
@@ -74,9 +77,13 @@ crosstable_options(
 
 \item{verbosity_duplicate_cols}{one of \code{default}, \code{quiet}, or \code{verbose}.}
 
+\item{crosstable_fishertest_B}{number of simulations to perform when \code{fisher.test()} is failing (FEXACT error 7).}
+
 \item{total}{For setting \code{\link[=crosstable]{crosstable()}} arguments globally.}
 
 \item{percent_pattern}{For setting \code{\link[=crosstable]{crosstable()}} arguments globally.}
+
+\item{margin}{For setting \code{\link[=crosstable]{crosstable()}} arguments globally.}
 
 \item{percent_digits}{For setting \code{\link[=crosstable]{crosstable()}} arguments globally.}
 
@@ -91,6 +98,8 @@ crosstable_options(
 \item{funs_arg}{For setting \code{\link[=crosstable]{crosstable()}} arguments globally.}
 
 \item{cor_method}{For setting \code{\link[=crosstable]{crosstable()}} arguments globally.}
+
+\item{drop_levels}{For setting \code{\link[=crosstable]{crosstable()}} arguments globally.}
 
 \item{unique_numeric}{For setting \code{\link[=crosstable]{crosstable()}} arguments globally.}
 

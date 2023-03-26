@@ -1,5 +1,7 @@
 
-utils::globalVariables(c(".", "x", "y", "n", "where", "ct", "col_keys", "p_col", ".col_1", ".col_2"))
+utils::globalVariables(c(".", "x", "y", "n", "where", "ct", "col_keys",
+                         "p_col", ".col_1", ".col_2", "value",
+                         ".data", ".env"))
 
 crosstable_caller = rlang::env()
 
@@ -24,6 +26,7 @@ crosstable_caller = rlang::env()
 #' @param showNA Whether to show NA in categorical variables (one of \code{c("ifany", "always", "no")}, like in \code{table()}).
 #' @param label Whether to show labels. See [import_labels()] or [set_label()]for how to add labels to the dataset columns.
 #' @param cor_method One of `c("pearson", "kendall", "spearman")` to indicate which correlation coefficient is to be used.
+#' @param drop_levels Whether to drop unused levels of factor variables. Default to `TRUE`.
 #' @param times When using formula with [survival::Surv()] objects, which times to summarize.
 #' @param followup When using formula with [survival::Surv()] objects, whether to display follow-up time.
 #' @param test Whether to perform tests.
@@ -44,17 +47,16 @@ crosstable_caller = rlang::env()
 #'
 #' @author Dan Chaltiel
 #' @export
-#' @importFrom checkmate makeAssertCollection reportAssertions assert_data_frame assert_count assert_string assert_logical assert_list assert_subset assert_choice
-#' @importFrom rlang quos enquos enquo expr quo_is_null is_null is_quosures is_formula is_string is_empty is_lambda as_function set_env quo_squash caller_env quo_is_missing check_dots_unnamed
-#' @importFrom tidyselect vars_select eval_select everything any_of
-#' @importFrom dplyr select mutate_if n_distinct across
-#' @importFrom purrr map map_lgl map_chr map_dfc pmap_dfr
-#' @importFrom forcats as_factor
-#' @importFrom stringr str_detect str_split
-#' @importFrom glue glue
+#' @importFrom checkmate assert_choice assert_count assert_data_frame assert_list assert_logical assert_multi_class makeAssertCollection reportAssertions
 #' @importFrom cli cli_abort cli_warn
-#' @importFrom lifecycle deprecated is_present deprecate_warn deprecate_stop
-#' @importFrom stats model.frame
+#' @importFrom dplyr across any_of everything intersect mutate n_distinct pull select where
+#' @importFrom forcats fct_na_value_to_level
+#' @importFrom glue glue
+#' @importFrom lifecycle deprecate_stop deprecate_warn deprecated
+#' @importFrom purrr discard imap_dfr map map_chr map_dfc
+#' @importFrom rlang as_function check_dots_unnamed current_env enquo is_empty is_formula local_options quo_get_expr
+#' @importFrom stats model.frame na.omit
+#' @importFrom tidyr unite
 #'
 #' @return A `data.frame`/`tibble` of class `crosstable`
 #'
@@ -104,6 +106,7 @@ crosstable = function(data, cols=everything(), ..., by=NULL,
                       showNA = c("ifany", "always", "no"), label = TRUE,
                       funs = c(" " = cross_summary), funs_arg=list(),
                       cor_method = c("pearson", "kendall", "spearman"),
+                      drop_levels = FALSE,
                       unique_numeric = 3, date_format=NULL,
                       times = NULL, followup = FALSE,
                       test = FALSE, test_args = crosstable_test_args(),
@@ -113,7 +116,6 @@ crosstable = function(data, cols=everything(), ..., by=NULL,
   debug=list()
   local_options(stringsAsFactors=FALSE)
   crosstable_caller$env = rlang::current_env()
-  # TODO bypos = eval_select(expr(by), data)
 
   # Options -------------------------------------------------------------
   missing_percent_pattern = missing(percent_pattern)
@@ -125,6 +127,7 @@ crosstable = function(data, cols=everything(), ..., by=NULL,
   if(missing(funs)) funs = getOption("crosstable_funs",  c(" " = cross_summary))
   if(missing(funs_arg)) funs_arg = getOption("crosstable_funs_arg",  list())
   if(missing(cor_method)) cor_method = getOption("crosstable_cor_method",  "pearson")
+  if(missing(drop_levels)) drop_levels = getOption("crosstable_drop_levels",  FALSE)
   if(missing(unique_numeric)) unique_numeric = getOption("crosstable_unique_numeric", 3)
   if(missing(date_format)) date_format = getOption("crosstable_date_format",  NULL)
   if(missing(times)) times = getOption("crosstable_times", NULL)
@@ -171,7 +174,8 @@ crosstable = function(data, cols=everything(), ..., by=NULL,
   }
   reportAssertions(coll)
 
-  if(!missing(margin)){
+  if(missing(margin)) margin = getOption("crosstable_margin")
+  if(!is.null(margin)){
     if(length(margin)>3){
       cli_abort(c("Margin should be of max length 3",
                   i=glue("margin={paste0(margin, collapse=', ')}")),
@@ -192,10 +196,10 @@ crosstable = function(data, cols=everything(), ..., by=NULL,
       body=percent_pattern,
       total_row="{n} ({p_col})",
       total_col="{n} ({p_row})",
-      total_all="{n} ({p_cell})"
+      total_all="{n} ({p_tot})"
     )
   }
-  walk(percent_pattern, check_percent_pattern)
+  check_percent_pattern(percent_pattern)
 
   if(!is.null(date_format)) funs_arg = c(funs_arg, list(date_format=date_format))
 
@@ -281,7 +285,7 @@ crosstable = function(data, cols=everything(), ..., by=NULL,
   ncol_x = if(is.null(data_x)) 0 else ncol(data_x)
   ncol_y = if(is.null(data_y)) 0 else ncol(data_y)
 
-  if(missing_percent_pattern && missing(margin)) {
+  if(missing_percent_pattern && is.null(margin)) {
     one_col_dummy = ncol_y==1 && length(unique(data_y[[1]]))==1
     default = if(one_col_dummy||ncol_y==0) "{n} ({p_col})" else "{n} ({p_row})"
     percent_pattern$body = getOption("crosstable_percent_pattern", default)
@@ -405,7 +409,7 @@ crosstable = function(data, cols=everything(), ..., by=NULL,
   # Function call -------------------------------------------------------
   by_levels = map(data_y, ~{
     if(is.numeric(.x)) NULL
-    else if(is.factor(.x)) levels(fct_explicit_na(.x, "NA"))
+    else if(is.factor(.x) && anyNA(.x)) levels(fct_na_value_to_level(.x, "NA"))
     else sort(unique(as.character(.x)), na.last=TRUE)
   })
   if(showNA=="no") by_levels = map(by_levels, ~.x[!is.na(.x)])
@@ -422,7 +426,7 @@ crosstable = function(data, cols=everything(), ..., by=NULL,
 
     rtn = cross_by(data_x=data_x, data_y=data_y2, funs=funs, funs_arg=funs_arg,
                    percent_pattern=percent_pattern, total=total,
-                   percent_digits=percent_digits, showNA=showNA,
+                   percent_digits=percent_digits, showNA=showNA, drop_levels=drop_levels,
                    cor_method=cor_method, times=times, followup=followup, test=test, test_args=test_args,
                    effect=effect, effect_args=effect_args, label=label)
 
@@ -432,7 +436,7 @@ crosstable = function(data, cols=everything(), ..., by=NULL,
     data_y2 = data_y
     rtn = cross_by(data_x=data_x, data_y=data_y, funs=funs, funs_arg=funs_arg,
                    percent_pattern=percent_pattern, percent_digits=percent_digits,
-                   total=total, showNA=showNA,
+                   total=total, showNA=showNA, drop_levels=drop_levels,
                    cor_method=cor_method, times=times, followup=followup, test=test, test_args=test_args,
                    effect=effect, effect_args=effect_args, label=label)
     class(rtn) = c("crosstable", "tbl_df", "tbl", "data.frame")
@@ -442,6 +446,7 @@ crosstable = function(data, cols=everything(), ..., by=NULL,
   debug$x_class = x_class
   debug$y_class = y_class
   attr(rtn, "debug") = debug
+  attr(rtn, "N") = nrow(data)
   attr(rtn, "showNA") = showNA
   attr(rtn, "variables") = names(data_x)
   attr(rtn, "has_test") = test
@@ -460,19 +465,4 @@ crosstable = function(data, cols=everything(), ..., by=NULL,
     attr(rtn, "by_levels") = by_levels
   }
   return(rtn)
-}
-
-
-
-# Utils -------------------------------------------------------------------
-
-
-#' Test if an object is a crosstable
-#'
-#' @param x An object
-#'
-#' @return TRUE if the object inherits from the `crosstable` class.
-#' @export
-is.crosstable = function(x) {
-  inherits(x, "crosstable")
 }

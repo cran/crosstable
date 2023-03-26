@@ -25,12 +25,11 @@ ct_compact = function(data, ...){
 #'
 #' @author Dan Chaltiel
 #' @export
-#' @importFrom tidyr replace_na
-#' @importFrom rlang :=
-#' @importFrom tidyselect any_of everything
-#' @importFrom dplyr lag mutate mutate_at mutate_all vars
-#' @importFrom officer fp_border
+#' @importFrom checkmate assert_scalar
+#' @importFrom dplyr across any_of everything lag mutate row_number select sym
 #' @importFrom flextable align bold border
+#' @importFrom officer fp_border
+#' @importFrom tidyr replace_na
 #'
 #' @return a compacted data.frame
 #'
@@ -39,38 +38,34 @@ ct_compact = function(data, ...){
 #' x=iris[c(1:5,51:55,101:105),]
 #' ct_compact(x, name_from="Species")
 #' ct_compact(x, name_from="Species", name_to="Petal.Length")
+#' x$Species2 = substr(x$Species, 1, 1)
+#' ct_compact(x, name_from="Species", wrap_cols="Species2")
 ct_compact.data.frame = function(data, name_from, name_to="variable", wrap_cols=NULL, rtn_flextable=FALSE, ...){
   assert_scalar(name_from)
   assert_scalar(name_to)
   id = (data[[name_from]]!=lag(data[[name_from]])) %>% replace_na(TRUE)
-  rtn = data.frame()
-  for(i in 1:sum(id)) {
-    x1 = which(id)[i]
-    x2 = which(id)[i+1]-1
-    if(is.na(x2)) x2 = nrow(data)
-    row = data[1,] %>% mutate_all(~"") %>% mutate(!!sym(name_to):=data[x1,name_from]) %>%
-      mutate_all(as.character)
-    rows = data[x1:x2,] %>% mutate_all(as.character)
-    if(is.null(rows[[name_to]])) rows[[name_to]]=""
-    rtn = rbind(rtn, row, rows)
-  }
 
-  id2 = which(id)+(0:(sum(id)-1))
-  rtn = rtn %>%
-    select(any_of(name_to), everything(), -any_of(name_from)) %>%
-    mutate_at(vars(any_of(wrap_cols)), ~{
-      xx=.x
-      xx[id2]=lead(xx)[id2]
-      xx[-id2]=""
-      xx
-    })
+  nf = sym(name_from)
+  nt = sym(name_to)
+  x = sort(c(seq(nrow(data)), which(id))) #duplicate rows
+  if(is.null(data[[name_to]])) data[[name_to]] = ""
+  rtn = data[x,] %>%
+    mutate(
+      across(everything(), as.character),
+      gp = row_number()==1 | !!nf!=lag(!!nf),
+      !!nt:=ifelse(.data$gp, !!nf, !!nt),
+      across(any_of(wrap_cols), ~ifelse(.data$gp, .x, "")),
+      across(-any_of(c(name_to, wrap_cols)), ~ifelse(.data$gp, "", .x)),
+    ) %>%
+    select(any_of(name_to), everything(), -any_of(name_from), -"gp")
+  rownames(rtn) = NULL #resets row numbers
 
   if(rtn_flextable){
+    id2 = which(id)+(0:(sum(id)-1))
     rtn = rtn %>% flextable %>% border(id2, border.top = fp_border()) %>%
       bold(id2) %>% align(id2, align="left")
   }
 
-  rownames(rtn) = NULL #resets row numbers
   attr(rtn, "title_rows") = id
   rtn
 }
@@ -84,9 +79,8 @@ ct_compact.data.frame = function(data, name_from, name_to="variable", wrap_cols=
 #'
 #' @author Dan Chaltiel
 #' @export
-#' @importFrom dplyr select %>% .data intersect
-#' @importFrom stringr str_subset
-#' @importFrom tidyselect any_of
+#' @importFrom dplyr any_of intersect mutate select
+#' @importFrom glue glue
 #'
 #' @examples
 #'
@@ -108,7 +102,7 @@ ct_compact.crosstable = function(data, name_from=c("label", ".id"), name_to="var
   rtn = data %>%
     select(-any_of(rcol)) %>%
     ct_compact.data.frame(name_from=name_from, name_to=name_to,
-                       wrap_cols=wrap_cols, rtn_flextable=FALSE)
+                          wrap_cols=wrap_cols, rtn_flextable=FALSE)
 
   new_attr_names = setdiff(names(attributes(data)), names(attributes(rtn)))
   attributes(rtn) = c(attributes(rtn), attributes(data)[new_attr_names])
@@ -122,6 +116,7 @@ ct_compact.crosstable = function(data, name_from=c("label", ".id"), name_to="var
 #' @rdname ct_compact
 #' @usage NULL
 #' @export
+#' @importFrom cli cli_abort
 ct_compact.default = function(data, ...) {
   cli_abort("{.fun ct_compact} is not defined for object of class {.cls {class(data)}}",
             class="ct_compact_notfound_error")
@@ -145,6 +140,7 @@ compact = function(data, ...){
 #' @rdname ct_compact
 #' @usage NULL
 #' @export
+#' @importFrom lifecycle deprecate_warn
 compact.data.frame = function(data, ...){
   deprecate_warn("0.5.0", "compact.data.frame()", "ct_compact.data.frame()", details="Or use purrr::compact()")
   ct_compact.data.frame(data, ...)
@@ -154,6 +150,7 @@ compact.data.frame = function(data, ...){
 #' @rdname ct_compact
 #' @usage NULL
 #' @export
+#' @importFrom lifecycle deprecate_warn
 compact.crosstable = function(data, ...){
   deprecate_warn("0.5.0", "compact.crosstable()", "ct_compact.crosstable()")
   ct_compact.crosstable(data, ...)
@@ -163,6 +160,7 @@ compact.crosstable = function(data, ...){
 #' @rdname ct_compact
 #' @usage NULL
 #' @export
+#' @importFrom cli cli_abort
 compact.default = function(data, ...) {
   fn=get_defined_function('compact')
   if(is.null(fn) || is.null(fn[[1L]]))

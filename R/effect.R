@@ -42,6 +42,9 @@ crosstable_effect_args = function(effect_summarize = diff_mean_auto,
 #'
 #' @author Dan Chaltiel
 #' @export
+#' @importFrom dplyr across mutate where
+#' @importFrom glue glue glue_collapse
+#' @importFrom purrr map_lgl
 #' @importFrom rlang is_string
 display_effect = function(effect, digits = 4){
   if(is.null(effect) || all(map_lgl(effect, is.null))){
@@ -51,8 +54,8 @@ display_effect = function(effect, digits = 4){
   }
 
   x = effect$summary %>%
-    mutate_if(is.numeric,
-              ~format_fixed(.x, digits=digits))
+    mutate(across(where(is.numeric),
+                  ~format_fixed(.x, digits=digits)))
 
   if(all(effect$summary$ci_inf=="error", na.rm=TRUE)){
     x$ci = "[CI error]"
@@ -91,6 +94,10 @@ NULL
 
 #' @keywords internal
 #' @noRd
+#' @importFrom dplyr n_distinct
+#' @importFrom glue glue
+#' @importFrom stats binomial confint glm
+#' @importFrom tibble tibble
 calc_effect_tabular = function(x, by, conf_level=0.95, type=c("OR", "RR", "RD")){
   type = match.arg(type)
   tab = table(by, x)
@@ -151,7 +158,6 @@ calc_effect_tabular = function(x, by, conf_level=0.95, type=c("OR", "RR", "RD"))
 
 #' @describeIn effect_tabular (**Default**) calculate the odds ratio
 #' @export
-#' @importFrom stats glm binomial confint.default
 effect_odds_ratio = function(x, by, conf_level=0.95) {
   calc_effect_tabular(x, by, conf_level, type="OR")
 }
@@ -160,8 +166,6 @@ effect_odds_ratio = function(x, by, conf_level=0.95) {
 
 #' @describeIn effect_tabular calculate the relative risk
 #' @export
-#' @importFrom stats glm binomial confint
-#' @importFrom glue glue
 # https://stats.stackexchange.com/a/336624/81974
 effect_relative_risk = function (x, by, conf_level = 0.95) {
   calc_effect_tabular(x, by, conf_level, type="RR")
@@ -172,8 +176,6 @@ effect_relative_risk = function (x, by, conf_level = 0.95) {
 
 #' @describeIn effect_tabular calculate the risk difference
 #' @export
-#' @importFrom stats glm binomial confint
-#' @importFrom glue glue
 effect_risk_difference = function (x, by, conf_level = 0.95) {
   calc_effect_tabular(x, by, conf_level, type="RD")
 }
@@ -212,8 +214,6 @@ NULL
 #' @describeIn effect_summary (**Default**) calculate a specific "difference in means" effect based on normality (Shapiro or Anderson test) and variance homogeneity (Bartlett test)
 #' @author Dan Chaltiel, David Hajage
 #' @export
-#' @importFrom stats sd qnorm bartlett.test t.test
-#' @importFrom forcats fct_rev
 diff_mean_auto = function(x, by, conf_level=0.95, R=500) {
   tab = table(by)
   if(length(tab) != 2) return(NULL)
@@ -229,7 +229,10 @@ diff_mean_auto = function(x, by, conf_level=0.95, R=500) {
 #' @describeIn effect_summary calculate a "difference in means" effect with a bootstrapped CI using standard deviation
 #' @author Dan Chaltiel, David Hajage
 #' @export
-#' @importFrom stats sd qnorm
+#' @importFrom glue glue
+#' @importFrom purrr map_dbl
+#' @importFrom stats qnorm sd
+#' @importFrom tibble tibble
 diff_mean_boot = function(x, by, conf_level=0.95, R=500) {
   x = as.numeric(x)
   tab = table(by)
@@ -259,7 +262,10 @@ diff_mean_boot = function(x, by, conf_level=0.95, R=500) {
 #' @describeIn effect_summary calculate a "difference in medians" effect with a bootstrapped CI using quantiles#'
 #' @author Dan Chaltiel, David Hajage
 #' @export
-#' @importFrom stats sd qnorm
+#' @importFrom glue glue
+#' @importFrom purrr map_dbl
+#' @importFrom stats median quantile
+#' @importFrom tibble tibble
 diff_median_boot = function(x, by, conf_level=0.95, R=500) {
   x=as.numeric(x)
   tab = table(by)
@@ -298,7 +304,10 @@ diff_median = function(...){
 #' @describeIn effect_summary  calculate a "difference in means" effect using `t.test` confidence intervals
 #' @author Dan Chaltiel, David Hajage
 #' @export
+#' @importFrom forcats fct_rev
+#' @importFrom glue glue
 #' @importFrom stats bartlett.test t.test
+#' @importFrom tibble tibble
 diff_mean_student = function(x, by, conf_level = 0.95) {
   x=as.numeric(x)
   tab = table(by)
@@ -344,7 +353,10 @@ diff_mean_student = function(x, by, conf_level = 0.95) {
 #'
 #' @author Dan Chaltiel, David Hajage
 #' @export
+#' @importFrom glue glue
+#' @importFrom rlang check_installed
 #' @importFrom stats confint
+#' @importFrom tibble tibble
 effect_survival_coxph = function(x, by, conf_level = 0.95) {
   check_installed("survival", reason="for survival data to be described using `crosstable()`.")
 
@@ -370,7 +382,8 @@ effect_survival_coxph = function(x, by, conf_level = 0.95) {
 
 
 
-#' @importFrom cli cli_warn cli_bullets
+#' @importFrom cli cli_bullets cli_warn
+#' @importFrom glue glue_collapse
 #' @keywords internal
 #' @noRd
 model_warn = function(mod, ci, type){

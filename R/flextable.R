@@ -12,7 +12,7 @@
 #' @param padding_v vertical padding (body).
 #' @param remove_header_keys if `TRUE` and `x` has several `by` strata, header will only display values.
 #' @param header_show_n numeric vector telling on which depth the group size should be indicated in the header. You can control the pattern using option `crosstable_options`. See [crosstable_options()] for details about it. See example for use case.
-#' @param header_show_n_pattern glue pattern used when `header_show_n==TRUE`. `.col` is the name of the column and `.n` the size of the group. Default to `{.col} (N={.n})`; you can use `{.col_key}` and `{.col_val}` when `by` has multiple stratum.
+#' @param header_show_n_pattern glue pattern used when `header_show_n==TRUE`. `.col` is the name of the column and `.n` the size of the group. Default to `{.col} (N={.n})`; you can also use `{.col_key}` and `{.col_val}` when `by` has multiple stratum. To control the "Total" column, enter this as a `list` with names "cell" and "total".
 #' @param generic_labels names of the crosstable default columns. Useful for translation for instance.
 #' @param ... unused.
 #'
@@ -23,13 +23,18 @@
 #' @describeIn as_flextable Turns a `crosstable` object into a formatted `flextable`.
 #' @seealso [crosstable()], [flextable::flextable()], [as_gt.crosstable()]
 #'
-#' @importFrom dplyr %>% select lead sym recode
-#' @importFrom stringr str_replace str_replace_all str_remove
-#' @importFrom flextable flextable autofit add_header_row set_header_labels merge_v merge_h bold align hline_top hline_bottom border_inner_h hline fix_border_issues padding as_flextable fontsize vline vline_left vline_right set_header_df
-#' @importFrom officer fp_border
 #' @importFrom checkmate assert_class vname
-#' @importFrom tibble as_tibble
+#' @importFrom cli cli_warn
+#' @importFrom dplyr across all_of any_of filter group_by intersect lead mutate pull recode select starts_with sym ungroup
+#' @importFrom flextable align autofit bold border border_inner_h fix_border_issues flextable fontsize hline hline_bottom hline_top merge_h merge_v padding set_header_df set_header_labels vline_left vline_right
+#' @importFrom glue glue
+#' @importFrom officer fp_border
+#' @importFrom purrr map
+#' @importFrom rlang set_names
+#' @importFrom stringr str_remove str_replace str_split
+#' @importFrom tibble lst tibble
 #' @importFrom tidyr replace_na separate
+#' @importFrom utils modifyList
 #' @export
 #'
 #' @examples
@@ -43,8 +48,9 @@
 #' crosstable(mtcars2, -model, by=c(am, vs)) %>% as_flextable(header_show_n=1:2)
 #' crosstable(mtcars2, cols=c(mpg, cyl), by=am, effect=TRUE) %>%
 #'    as_flextable(keep_id=TRUE, autofit=FALSE)
-#' crosstable(mtcars2, cols=c(mpg, cyl), by=am, effect=TRUE) %>%
-#'    as_flextable(compact=TRUE, header_show_n=TRUE)
+#' crosstable(mtcars2, cols=c(mpg, cyl), by=am, effect=TRUE, total=TRUE) %>%
+#'    as_flextable(compact=TRUE, header_show_n=TRUE,
+#'                 header_show_n_pattern=list(cell="{.col} (N={.n})", total="Total\n(N={.n})"))
 #'
 #' #Renaming (because why not?)
 #' crosstable(mtcars2, am, by=vs, total="both", test=TRUE, effect=TRUE) %>%
@@ -72,7 +78,9 @@ as_flextable.crosstable = function(x, keep_id=FALSE, by_header=NULL,
   if(missing(remove_header_keys)) remove_header_keys = getOption('crosstable_remove_header_keys',
                                                                  remove_header_keys)
   if(missing(header_show_n)) header_show_n = getOption('crosstable_header_show_n', header_show_n)
-  if(missing(header_show_n_pattern)) header_show_n_pattern = getOption('crosstable_header_show_n_pattern', header_show_n_pattern)
+  if(missing(header_show_n_pattern)) header_show_n_pattern = getOption('crosstable_header_show_n_pattern',
+                                                                       header_show_n_pattern)
+  header_show_n_pattern = get_show_n_pattern(header_show_n_pattern)
   if(missing(generic_labels)) generic_labels = getOption('crosstable_generic_labels', generic_labels)
   if(missing(fontsizes)) fontsizes = list(
     body=getOption('crosstable_fontsize_body', fontsizes$body),
@@ -103,6 +111,10 @@ as_flextable.crosstable = function(x, keep_id=FALSE, by_header=NULL,
   if(length(by_header)==1 && is.na(by_header)) by_header=FALSE
   if(identical(by_header, "")) by_header=FALSE
 
+  inner_labels = attr(x, "inner_labels")
+  if(!is.null(inner_labels)){
+    generic_labels = modifyList(generic_labels, inner_labels)
+  }
   generic_labels = get_generic_labels(generic_labels)
   test=generic_labels$test
   id=generic_labels$id
@@ -137,7 +149,7 @@ as_flextable.crosstable = function(x, keep_id=FALSE, by_header=NULL,
     sep.rows = which(rtn[[id]] != lead(rtn[[id]]))
     body_merge = intersect(names(rtn), generic_labels[c("label", "test", "effect", "id")]) %>%
       unlist()
-    cols = rtn %>% names()
+    cols = names(rtn)
 
     if(!keep_id) {
       cols = rtn %>% select(-any_of(id)) %>% names()
@@ -176,9 +188,15 @@ as_flextable.crosstable = function(x, keep_id=FALSE, by_header=NULL,
       header_mapping = header_mapping %>%
         mutate(
           .n = by_table[col_keys],
-          .col_1 = ifelse(!is.na(.n), glue(header_show_n_pattern, .col=.col_1), .col_1)
+          .col_1 = ifelse(!is.na(.n), glue(header_show_n_pattern$cell, .col=.col_1), .col_1)
         ) %>%
         select(-.n)
+
+      if(!is.null(header_show_n_pattern$total)){
+        tmp = glue(header_show_n_pattern$total, .n={attr(x,"N")})
+        header_mapping[header_mapping$col_keys=="Total", ".col_2"] = tmp
+        header_mapping[header_mapping$col_keys=="Total", ".col_1"] = tmp
+      }
     }
 
     if(!isFALSE(by_header)){
@@ -219,18 +237,21 @@ as_flextable.crosstable = function(x, keep_id=FALSE, by_header=NULL,
             .col_val = .col2[2]
             .n = sum(by_table[col_keys])
             ifelse(!is.na(.n) & .c[1] %in% header_show_n2,
-                   glue(header_show_n_pattern), .col)
-          })
-      }
+                   glue(header_show_n_pattern$cell), .col)
+          }) %>%
+          ungroup()
 
-      header_mapping %>%
-        ungroup() %>%
-        select(-starts_with("n"))
+        if(!is.null(header_show_n_pattern$total)){
+          tmp = glue(header_show_n_pattern$total, .n={attr(x,"N")})
+          header_mapping[header_mapping$col_keys=="Total", ".col_2"] = tmp
+          header_mapping[header_mapping$col_keys=="Total", ".col_1"] = tmp
+        }
+      }
     }
 
     if(remove_header_keys){
       header_mapping = header_mapping %>%
-        mutate(across(starts_with(".col_"), ~str_remove(.x, "^.*=")))
+        mutate(across(-col_keys, ~str_remove(.x, "^.*?=")))
     }
     border_left_first = sum(rtn$header$col_keys %in% generic_labels[c("label", "variable", "id")])
     border_separations = header_mapping %>%
@@ -246,8 +267,9 @@ as_flextable.crosstable = function(x, keep_id=FALSE, by_header=NULL,
       vline_right(border=border1)
   }
 
+  merge_cols = names(rtn$header$dataset) %>% .[. %in% generic_labels]
   rtn = rtn %>%
-    merge_v(part = "head") %>%
+    merge_v(part = "head", j=merge_cols) %>%
     bold(part = "head") %>%
     align(align = "left", part = "all") %>%
     align(align="center", part="head") %>%
@@ -309,6 +331,9 @@ af = as_flextable.crosstable
 #'
 #' @author Dan Chaltiel
 #' @export
+#' @importFrom checkmate assert_class
+#' @importFrom flextable as_flextable flextable
+#' @importFrom utils browseURL
 peek = function(x, docx=getOption("crosstable_peek_docx", TRUE), ...) {
   if(has_method(x, "as_flextable")){
     x = as_flextable(x, ...)
@@ -325,4 +350,47 @@ peek = function(x, docx=getOption("crosstable_peek_docx", TRUE), ...) {
     if(interactive()) browseURL(filename)
   }
   invisible()
+}
+
+
+# utils ---------------------------------------------------------------------------------------
+
+#' @keywords internal
+#' @noRd
+#' @examples
+#' get_show_n_pattern()
+#' get_show_n_pattern("a")
+#' get_show_n_pattern(list(cell="a"))
+#' get_show_n_pattern(list(total="b"))
+#' get_show_n_pattern(list(cell="a", total="b"))
+#' @importFrom cli cli_abort
+#' @importFrom purrr map_lgl
+#' @importFrom rlang is_scalar_character names2
+get_show_n_pattern = function(x=NULL){
+  rtn = list(cell="{.col} (N={.n})", total=NULL)
+  if(is.null(x)){
+    return(rtn)
+  } else if(!is.list(x)){
+    if(!is_scalar_character(x))
+      cli_abort("{.arg x} should be either a list or a character vector of length 1.",
+                class="get_show_n_pattern_class")
+    rtn$cell=x
+  } else {
+    if(any(!names2(x) %in% c("cell", "total")))
+      cli_abort("When {.arg x} is a list, its names should be {.val cell} and {.val total}.",
+                class="get_show_n_pattern_names")
+    if(!all(map_lgl(x, is_scalar_character)))
+      cli_abort("When {.arg x} is a list, all its values should be character vectors of length 1.",
+                class="get_show_n_pattern_length")
+    rtn[names(x)] = x
+  }
+  rtn
+}
+
+
+#' TODO validate_generic_labels
+#' @keywords internal
+#' @noRd
+validate_generic_labels = function(x, generic_labels){
+
 }

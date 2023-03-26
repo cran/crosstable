@@ -1,44 +1,40 @@
 
+
+# Options and packages ------------------------------------------------------------------------
+
 Sys.setenv(LANGUAGE = "en")
 Sys.setenv(TZ='Europe/Paris')
-
-
+Sys.setenv(TESTTHAT_NCPUS =4)
 options(
   encoding="UTF-8",
+  # width = 200,
   # warn=0, #default, stacks
   warn=1, #immediate.=TRUE
+  Ncpus=4,
   # warn=2, #error
   # warnPartialMatchArgs=TRUE,
   # warnPartialMatchAttr=TRUE,
   # warnPartialMatchDollar=TRUE,
   stringsAsFactors=FALSE,
-  dplyr.summarise.inform=FALSE,
   # conflicts.policy="depends.ok",
+  dplyr.summarise.inform=FALSE,
   tidyverse.quiet=TRUE,
   tidyselect_verbosity ="verbose",#quiet or verbose
   lifecycle_verbosity="warning", #NULL, "quiet", "warning" or "error"
   # lifecycle_verbosity="verbose",
   testthat.progress.max_fails = 50
 )
-
-# options(width = 200)
-
 crosstable_options(verbosity_autotesting="quiet")
-# if(testthat::is_testing()){
-# print(is_parallel())
-
-v=utils::View
-if(FALSE){
-  # prettycode::prettycode()
-}
+# prettycode::prettycode()
 
 
-library(dplyr, warn.conflicts = FALSE)
-library(crosstable, warn.conflicts = FALSE)
-library(stats, warn.conflicts = FALSE)
-library(officer, warn.conflicts = FALSE)
-# library(survival, warn.conflicts = FALSE)
-# compact=crosstable::compact
+#'@source https://stackoverflow.com/a/52066708/3888000
+shhh = function(expr) suppressPackageStartupMessages(suppressWarnings(expr))
+shhh(library(dplyr))
+shhh(library(officer))
+
+
+# Dataset -------------------------------------------------------------------------------------
 
 set.seed(1234)
 mtcars3 = as_tibble(mtcars2)
@@ -49,18 +45,19 @@ mtcars3$cyl6 = mtcars3$cyl==6
 mtcars3$dummy = "dummy"
 mtcars3$dummy_na = NA
 mtcars3$dummy_na2 = NA
-mtcars3$dummy_num_vs = ifelse(mtcars3$vs=="vshaped", 0, rnorm(15))
+mtcars3$dummy_num_vs = ifelse(mtcars3$vs=="vshaped", 0, stats::rnorm(15))
 mtcars3$dummy2 = mtcars3$dummy
 mtcars3$dummy2[5:12] = NA
-mtcars3$test = rbinom(nrow(mtcars3), 1, 0.5) %>% factor(labels = c("A","B"))
+mtcars3$test = stats::rbinom(nrow(mtcars3), 1, 0.5) %>% factor(labels = c("A","B"))
 mtcars3$surv = survival::Surv(mtcars3$disp, mtcars3$am=="manual") %>% set_label("Dummy survival (disp/am)")
 # mtcars3$my_date = as.Date(mtcars2$hp , origin="2010-01-01") %>% set_label("Some nonsense date")
 # mtcars3$my_posix = as.POSIXct(mtcars2$qsec*3600*24 , origin="2010-01-01") %>% set_label("Date+time")
 mtcars3$diff = difftime(mtcars3$hp_date, mtcars3$qsec_posix, units="days") %>% set_label("Difftime hp_date-qsec_posix (days)")
 
 
+# Functions -----------------------------------------------------------------------------------
 
-# Functions ---------------------------------------------------------------
+v = utils::View
 iris2names = c(SL="Sepal.Length", SW="Sepal.Width", PL="Petal.Length", PW="Petal.Width", Sp="Species")
 iris2_num = iris2 %>% select(-Species)
 
@@ -107,7 +104,6 @@ expect_cross_bak = function(expr, xnames, byname, dim, expect=c("nothing", "sile
     expect_equal(unname(xnames), unique(x$.id))
 }
 
-
 snapshot_review_bg = function(...){
   # brw = function(url) .Call("rs_browseURL", url, PACKAGE="(embedding)")
   brw = Sys.getenv("R_BROWSER")
@@ -115,7 +111,6 @@ snapshot_review_bg = function(...){
               package=TRUE,
               env = c(R_BROWSER = brw))
 }
-
 
 expect_warning2 = function(object, ...) {
   rtn = testthat::expect_warning(object, ...)
@@ -127,4 +122,12 @@ expect_warning2 = function(object, ...) {
   rtn
 }
 
-print('Helper loaded')
+compare = function (x, y, x_arg=caller_arg(x), y_arg=caller_arg(y), len_max=Inf, ...) {
+  x_arg = stringr::str_trunc(x_arg, width=len_max)
+  y_arg = stringr::str_trunc(y_arg, width=len_max)
+  waldo::compare(x, y, x_arg=x_arg, y_arg=y_arg, ...)
+}
+
+
+cli::cli_inform(c(v="Initializer {.file tests/testthat/helper-init.R} loaded",
+                  i="is_testing={is_testing()}, is_parallel={is_parallel()}"))

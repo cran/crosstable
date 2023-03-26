@@ -1,9 +1,8 @@
 
 #' @keywords internal
-#' @importFrom glue glue
-#' @importFrom rlang :=
-#' @importFrom dplyr rename select everything .data
-#' @importFrom checkmate assert assert_numeric assert_character
+#' @importFrom checkmate assert assert_numeric
+#' @importFrom dplyr everything mutate rename select
+#' @importFrom purrr map_df
 #' @noRd
 cross_numeric = function(data_x, data_y, funs, funs_arg, showNA, total,
                          label, cor_digits, cor_method,  test, test_args, effect, effect_args) {
@@ -28,24 +27,25 @@ cross_numeric = function(data_x, data_y, funs, funs_arg, showNA, total,
   } else if(!is.date(data_x[[1]]) && is.numeric.and.not.surv(data_y[[1]])){
     rtn = summarize_numeric_numeric(data_x[[1]], data_y[[1]], method=cor_method,
                                     digits=cor_digits, test=test, test_args) %>%
-      rename(!!y_name:=.data$value)
+      rename(!!y_name:="value")
   } else {
     return(NULL)
   }
 
   rtn = rtn %>%
     mutate(.id=names(data_x), label=x_name) %>%
-    select(.data$.id, .data$label, everything()) %>%
-    mutate_all(as.character)
+    select(".id", "label", everything()) %>%
+    map_df(as.character)
 
   rtn
 }
 
 
 #' Summarize numeric variables
-#' @importFrom checkmate assert_numeric assert_character
-#' @importFrom tibble rownames_to_column
-#' @importFrom dplyr rename mutate_if
+#' @importFrom cli cli_abort
+#' @importFrom dplyr across mutate where
+#' @importFrom methods formalArgs
+#' @importFrom purrr discard imap_dfr
 #' @keywords internal
 #' @noRd
 summarize_numeric_single = function(x, funs, funs_arg){
@@ -69,18 +69,18 @@ summarize_numeric_single = function(x, funs, funs_arg){
     }
 
     data.frame(variable=variable, value=v) %>%
-      mutate_if(~is.numeric(.x)||is.date(.x), format_fixed, !!!funs_arg)
+      mutate(across(where(~is.numeric(.x)||is.date(.x)),
+                    ~format_fixed(.x, !!!funs_arg)))
   })
 }
 
 
 #' Summarize numeric by categorical
-#' @importFrom checkmate assert_numeric assert_character assert_scalar
-#' @importFrom tibble tibble
-#' @importFrom dplyr group_by mutate ungroup mutate_at vars arrange filter .data
-#' @importFrom tidyr nest unnest pivot_wider replace_na
-#' @importFrom purrr map imap reduce
-#' @importFrom forcats fct_explicit_na
+#' @importFrom checkmate assert_numeric assert_scalar
+#' @importFrom dplyr across everything mutate ungroup
+#' @importFrom forcats fct_na_value_to_level
+#' @importFrom purrr imap_dfr
+#' @importFrom tidyr pivot_wider
 #' @keywords internal
 #' @noRd
 summarize_numeric_factor = function(x, by, funs, funs_arg, showNA, total,
@@ -106,7 +106,7 @@ summarize_numeric_factor = function(x, by, funs, funs_arg, showNA, total,
   if(.showNA==TRUE) {
     if(!anyNA(by)) .na="no NA"
     by_filter=TRUE
-    by = fct_explicit_na(by, "NA")
+    by = fct_na_value_to_level(by, "NA")
   } else{
     by_filter = !is.na(by)
   }
@@ -126,11 +126,10 @@ summarize_numeric_factor = function(x, by, funs, funs_arg, showNA, total,
 
 
 #' Summarize numeric by numeric (correlation)
-#' @importFrom checkmate assert_numeric assert_string assert_count assert_logical assert_list
-#' @importFrom tibble tibble
-#' @importFrom dplyr mutate .data
-#' @importFrom stats cor.test
+#' @importFrom checkmate assert_count assert_list assert_logical assert_numeric assert_string
+#' @importFrom dplyr mutate
 #' @importFrom glue glue
+#' @importFrom tibble tibble
 #' @keywords internal
 #' @noRd
 summarize_numeric_numeric = function(x, by, method, digits, test, test_args){
@@ -155,4 +154,3 @@ summarize_numeric_numeric = function(x, by, method, digits, test, test_args){
 
   tibble(variable=method, value=as.character(value)) %>% mutate(test=.test)
 }
-

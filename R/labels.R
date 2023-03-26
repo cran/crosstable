@@ -10,7 +10,9 @@
 #'
 #' @author Dan Chaltiel
 #' @export
+#' @importFrom cli cli_abort
 #' @importFrom purrr map map2
+#' @importFrom rlang is_null
 #' @seealso [set_label()], [import_labels()], [remove_label()], [Hmisc::label()], [expss::var_lab()]
 #' @examples
 #' xx=mtcars2 %>%
@@ -62,7 +64,11 @@ get_label = function(x, default=names(x), object=FALSE, simplify=TRUE){
 #'
 #' @author Dan Chaltiel
 #' @export
-#' @importFrom checkmate assert_string
+#' @importFrom checkmate assert_character
+#' @importFrom cli cli_abort
+#' @importFrom dplyr intersect
+#' @importFrom purrr map_chr
+#' @importFrom rlang is_named
 #' @seealso [get_label()], [import_labels()], [remove_label()]
 #' @examples
 #' library(dplyr)
@@ -71,23 +77,25 @@ get_label = function(x, default=names(x), object=FALSE, simplify=TRUE){
 #'           mpg3=mpg %>% copy_label_from(mpg2)) %>%
 #'    crosstable(c(mpg, mpg2, mpg3))
 #' mtcars %>%
-#'    copy_label_from(mtcars2[,1:11]) %>%
+#'    copy_label_from(mtcars2) %>%
 #'    crosstable(c(mpg, vs))
 set_label = function(x, value, object=FALSE){
   if(is.null(value) || all(is.na(value))) return(x)
-  value = as.character(value)
+  value = map_chr(value, as.character)
   assert_character(value)
   if(is.list(x) && !object){
     if(length(value)==1){
       for (each in seq_along(x))
         x[[each]] = set_label(x[[each]], value)
-    } else if(length(value)==length(x)){
+    } else if(is_named(value)){
+      for (each in intersect(names(value), names(x)))
+        x[[each]] = set_label(x[[each]], value[[each]])
+    }  else if(length(value)==length(x)){
       for (each in seq_along(x))
         x[[each]] = set_label(x[[each]], value[[each]])
     } else {
-      cli_abort("`value` must be either length 1 or the same as `x`")
+      cli_abort("{.arg value} must be named or must be either length 1 or the same as `x`")
       #TODO faire des tests pour ces deux nouvelles conditions !
-      #TODO mtcars %>% copy_label_from(mtcars2) ?
     }
     return(x)
   }
@@ -100,8 +108,6 @@ set_label = function(x, value, object=FALSE){
 #'
 #' @param x the variable to label
 #' @param from the variable whose label must be copied
-#'
-#' @return An object of the same type as `x`, with the label of `from`
 #'
 #' @rdname set_label
 #' @author Dan Chaltiel
@@ -155,27 +161,31 @@ remove_label = remove_labels
 #' @return A dataframe which names are copied from the label attribute
 #'
 #' @importFrom checkmate assert_data_frame
+#' @importFrom dplyr rename_with select
 #' @author Dan Chaltiel
 #' @export
 #'
 #' @examples
 #' rename_with_labels(mtcars2[,1:5], except=5) %>% names()
 #' rename_with_labels(iris2, except=Sepal.Length) %>% names()
+#' rename_with_labels(iris2, except=starts_with("Pet")) %>% names()
 rename_with_labels = function(df, except=NULL){
   assert_data_frame(df, null.ok=TRUE)
-  except = eval_select(enquo(except), data=df)
-  if(length(except)==0) except = ncol(df)+1
-  names(df)[-except] = get_label(df)[-except]
-  df
+  except = names(select(df, {{except}}))
+  # except = names(select(df, any_of({{except}})))
+  rename_with(df, ~ifelse(.x %in% except, .x, get_label(df)[.x]))
 }
+#TODO https://stackoverflow.com/q/75848408/3888000
 
 #' @export
 #' @rdname rename_with_labels
 #' @usage NULL
+#' @importFrom lifecycle deprecate_warn
 rename_dataframe_with_labels=function(df, except=NULL){
   deprecate_warn("0.5.0", "rename_dataframe_with_labels()", "rename_with_labels()")
   rename_with_labels(df, except)
 }
+
 
 
 
@@ -192,18 +202,21 @@ rename_dataframe_with_labels=function(df, except=NULL){
 #'
 #' @examples
 #' #options(crosstable_clean_names_fun=janitor::make_clean_names)
-#' x=data.frame("name with space"=1, TwoWords=1, "total $ (2009)"=1, àccénts=1)
-#' clean_names_with_labels(x, except=TwoWords) %>% names()
-#' clean_names_with_labels(x, except=TwoWords) %>% get_label()
+#' x = data.frame("name with space"=1, TwoWords=1, "total $ (2009)"=1, àccénts=1,
+#'                check.names=FALSE)
+#' cleaned = clean_names_with_labels(x, except=TwoWords)
+#' cleaned %>% names()
+#' cleaned %>% get_label()
+#' @importFrom checkmate assert_data_frame
+#' @importFrom dplyr rename_with select
 clean_names_with_labels = function(df, except=NULL, .fun=getOption("crosstable_clean_names_fun")){
   assert_data_frame(df, null.ok=TRUE)
-  except = eval_select(enquo(except), data=df)
-  if(length(except)==0) except = ncol(df)+1
   if(is.null(.fun)) .fun=crosstable_clean_names
-  labs = names(df)
-  names(df)[-except] = .fun(names(df))[-except]
 
-  set_label(df, labs)
+  except = names(select(df, {{except}}))
+  df %>%
+    rename_with(~ifelse(.x %in% except, .x, .fun(.x))) %>%
+    set_label(names(df))
 }
 
 
@@ -219,7 +232,9 @@ clean_names_with_labels = function(df, except=NULL, .fun=getOption("crosstable_c
 #'
 #' @return An object of the same type as `data`, with labels
 #'
+#' @importFrom cli cli_warn
 #' @importFrom purrr imap_dfr
+#' @importFrom rlang current_env
 #' @author Dan Chaltiel
 #' @export
 #'
@@ -229,7 +244,7 @@ clean_names_with_labels = function(df, except=NULL, .fun=getOption("crosstable_c
 #'                Sepal.Width="Width of Sepal") %>%
 #'   crosstable()
 apply_labels = function(data, ..., warn_missing=FALSE) {
-  args = list(...)
+  args = lst(...)
   unknowns = setdiff(names(args), names(data))
   if (length(unknowns) && warn_missing) {
     cli_warn("Cannot apply a label to unknown column{?s} in `data`: {.var {unknowns}}",
@@ -262,9 +277,13 @@ apply_labels = function(data, ..., warn_missing=FALSE) {
 #'
 #' @author Dan Chaltiel
 #' @export
-#' @importFrom glue glue
-#' @importFrom tidyr drop_na
+#' @importFrom cli cli_abort cli_warn
+#' @importFrom dplyr all_of select
+#' @importFrom lifecycle deprecate_warn deprecated is_present
+#' @importFrom purrr imap_dfr
+#' @importFrom rlang current_env
 #' @importFrom tibble column_to_rownames
+#' @importFrom tidyr drop_na
 #'
 #' @seealso [get_label()], [set_label()], [remove_label()], [save_labels()]
 #' @examples
@@ -349,6 +368,7 @@ import_labels = function(.tbl, data_label,
 #'   transmute(disp=as.numeric(disp)+1) %>%
 #'   import_labels(warn_label=FALSE) %>% #
 #'   crosstable(disp)
+#' @importFrom tibble tibble
 save_labels = function(.tbl){
   labels_env$last_save = tibble(
     name=names(.tbl),

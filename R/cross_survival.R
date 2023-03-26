@@ -1,5 +1,7 @@
 
-#' @importFrom dplyr mutate select everything mutate_all .data
+#' @importFrom dplyr everything mutate select
+#' @importFrom purrr map_df
+#' @importFrom rlang check_installed
 #' @keywords internal
 #' @noRd
 cross_survival=function(data_x, data_y, showNA, total, label, surv_digits, times, followup,
@@ -30,16 +32,18 @@ cross_survival=function(data_x, data_y, showNA, total, label, surv_digits, times
 
   rtn = rtn %>%
     mutate(.id=names(data_x), label=x_name) %>%
-    select(.data$.id, .data$label, everything()) %>%
-    mutate_all(as.character)
+    select(".id", "label", everything()) %>%
+    map_df(as.character)
 
   rtn
 }
 
 
 
-#' @importFrom dplyr tibble summarise mutate pull select everything mutate_all .data
+#' @importFrom dplyr everything mutate pull select summarise
 #' @importFrom glue glue
+#' @importFrom purrr map_df
+#' @importFrom tibble tibble
 #' @keywords internal
 #' @noRd
 summarize_survival_single = function(surv, times, digits, followup) {
@@ -71,19 +75,21 @@ summarize_survival_single = function(surv, times, digits, followup) {
   }
   rtn=rbind(rtn, c("Median survival", x$table["median"]))
   rtn %>%
-    select(.data$variable, everything()) %>%
-    mutate_all(as.character)
+    select("variable", everything()) %>%
+    map_df(as.character)
 }
 
 
 
 
 
-#' @importFrom dplyr mutate mutate_all rename select everything tibble group_by row_number summarise pull left_join %>%
-#' @importFrom tidyr pivot_wider replace_na
-#' @importFrom rlang set_names :=
-#' @importFrom checkmate assert
+#' @importFrom checkmate assert assert_class
+#' @importFrom dplyr everything group_by left_join mutate pull rename row_number select summarise
 #' @importFrom glue glue
+#' @importFrom rlang set_names
+#' @importFrom stats complete.cases
+#' @importFrom tibble tibble
+#' @importFrom tidyr pivot_wider replace_na
 #' @keywords internal
 #' @noRd
 summarize_survival_by = function(surv, by, times, followup, total, digits, showNA,
@@ -103,10 +109,10 @@ summarize_survival_by = function(surv, by, times, followup, total, digits, showN
     cname = as.character(unique(by2))
     rtn = summarize_survival_single(surv, times, digits, followup)
     rtn = rtn %>%
-      rename(!!cname:=.data$value) %>%
+      rename(!!cname:="value") %>%
       mutate(test=if(test) "No test" else NULL,
              effect=if(effect) "No Effect" else NULL) %>%
-      select(.data$variable, everything())
+      select("variable", everything())
     return(rtn)
   }
 
@@ -120,12 +126,12 @@ summarize_survival_by = function(surv, by, times, followup, total, digits, showN
                 event=x$n.event, risk=x$n.risk)
   rtn = tibble(count=as.character(counts), by=x$strata) %>%
     group_by(by) %>% mutate(x=row_number()) %>%
-    # mutate_at(vars(by), ~stringr::str_remove(.x, ".*=")) %>%
+    # mutate(across(by, ~stringr::str_remove(.x, ".*="))) %>%
     pivot_wider(names_from = "by", values_from = "count") %>%
     select(-x) %>%
     set_names(names(table(by2))) %>%
     mutate(variable=paste0("t=", times)) %>%
-    select(.data$variable, everything())
+    select("variable", everything())
 
   if (followup) {
     surv_fu = surv
@@ -153,14 +159,11 @@ summarize_survival_by = function(surv, by, times, followup, total, digits, showN
   }
   if (1 %in% total) {
     rtn_tot = summarize_survival_single(surv, times, digits, followup) %>%
-      rename(Total=.data$value)
+      rename(Total="value")
     rtn = left_join(rtn, rtn_tot, by=c("variable"))
   }
 
 
   rtn %>% mutate(test=.tests, effect=.effect) %>%
-    select(.data$variable, everything())
+    select("variable", everything())
 }
-
-
-

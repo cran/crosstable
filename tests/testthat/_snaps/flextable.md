@@ -1,4 +1,4 @@
-# flextable header default
+# header default
 
     Code
       ct1 %>% as_flextable() %>% get_header_df()
@@ -47,7 +47,7 @@
       2                     cyl3=NA
       3                       vs=NA
 
-# flextable header by_header (monoby)
+# header by_header (monoby)
 
     Code
       ct1 %>% as_flextable(by_header = NULL) %>% get_header_df()
@@ -61,7 +61,68 @@
         label variable auto manual
       1 label variable auto manual
 
-# flextable header header_show_n+pattern
+# generic_labels
+
+    Code
+      crosstable(mtcars2, am, by = vs, total = "both", test = TRUE, effect = TRUE) %>%
+        rename(ID = .id, math = variable, Tot = Total, lab = label, pval = test, fx = effect) %>%
+        as_flextable(by_header = "Engine shape", generic_labels = list(id = "ID",
+          variable = "math", total = "Tot", label = "lab", test = "pval", effect = "fx")) %>%
+        get_header_df()
+    Output
+        lab math     straight      vshaped Tot fx pval
+      1 lab math Engine shape Engine shape Tot fx pval
+      2 lab math     straight      vshaped Tot fx pval
+
+# get_show_n_pattern
+
+    Code
+      get_show_n_pattern()
+    Output
+      $cell
+      [1] "{.col} (N={.n})"
+      
+      $total
+      NULL
+      
+    Code
+      get_show_n_pattern("a")
+    Output
+      $cell
+      [1] "a"
+      
+      $total
+      NULL
+      
+    Code
+      get_show_n_pattern(list(cell = "a"))
+    Output
+      $cell
+      [1] "a"
+      
+      $total
+      NULL
+      
+    Code
+      get_show_n_pattern(list(total = "b"))
+    Output
+      $cell
+      [1] "{.col} (N={.n})"
+      
+      $total
+      [1] "b"
+      
+    Code
+      get_show_n_pattern(list(cell = "a", total = "b"))
+    Output
+      $cell
+      [1] "a"
+      
+      $total
+      [1] "b"
+      
+
+# header header_show_n+pattern
 
     Code
       ct2 %>% as_flextable(header_show_n = TRUE, header_show_n_pattern = "{.col_key}:\n{.col_val}\n(N={.n})",
@@ -77,7 +138,20 @@
       1     vs:\nNA\n(N=8)
       2 am:\nmanual\n(N=0)
 
-# flextable header remove_header_keys
+# header header_show_n+remove_header_keys
+
+    Code
+      ct2 %>% as_flextable(header_show_n = TRUE, remove_header_keys = TRUE) %>%
+        get_header_df()
+    Output
+        label variable am=auto & vs=straight am=manual & vs=straight
+      1 label variable        straight (N=9)          straight (N=9)
+      2 label variable            auto (N=2)            manual (N=7)
+        am=auto & vs=vshaped am=manual & vs=vshaped am=auto & vs=NA am=manual & vs=NA
+      1       vshaped (N=15)         vshaped (N=15)        NA (N=8)          NA (N=8)
+      2           auto (N=9)           manual (N=6)      auto (N=8)      manual (N=0)
+
+# header remove_header_keys
 
     Code
       ct1 %>% as_flextable(remove_header_keys = T) %>% get_header_df()
@@ -117,7 +191,7 @@
       2                          NA
       3                          NA
 
-# flextable header header_show_n
+# header header_show_n
 
     Code
       ct1 %>% as_flextable(header_show_n = TRUE) %>% get_header_df()

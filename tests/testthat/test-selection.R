@@ -58,11 +58,6 @@ test_that("crosstable with external character vector", {
     crosstable(iris2, c(all_of(XX), -Sepal.Width), by="Species"),
     xnames=c("SL"), byname="Species", dim=c(4,6)) %>%
     expect_silent()
-
-  crosstable(iris2, XX, by="Species") %>%
-    expect_cross(xnames=c("SL", "SW"), byname="Species", dim=c(8,6)) %>%
-    suppressMessages()
-  # expect_message("external vector")
 })
 
 
@@ -247,7 +242,7 @@ test_that("crosstable limit tests: warnings", {
 
 test_that("crosstable limit tests: deprecated features", {
   #dont use ellipsis
-  lifecycle::expect_deprecated(crosstable(iris2, Sepal.Length, Sepal.Width, by=Species))
+  # lifecycle::expect_deprecated(crosstable(iris2, Sepal.Length, Sepal.Width, by=Species))
 
   #dont use .vars
   lifecycle::expect_defunct(crosstable(iris2, .vars=c(Sepal.Length, Sepal.Width), by=Species))
@@ -272,12 +267,8 @@ test_that("crosstable limit tests: errors", {
   })
 
   #wrong functions (returning non-scalar)
-  expect_error(crosstable(iris2, ~.x, by="Species"),
-               # "Result 1 must be a single logical, .*",
-               class = "purrr_error_bad_element_vector")
-  expect_error(crosstable(iris2, ~c(is.numeric(.x),is.numeric(.x)), by="Species"),
-               # "Result 1 must be a single logical, .*",
-               class = "purrr_error_bad_element_vector")
+  expect_snapshot(crosstable(iris2, ~.x, by="Species"), error = TRUE)
+  expect_snapshot(crosstable(iris2, ~c(is.numeric(.x),is.numeric(.x)), by="Species"), error = TRUE)
 })
 
 

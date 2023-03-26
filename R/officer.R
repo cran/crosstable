@@ -16,8 +16,9 @@
 #'
 #' @author Dan Chaltiel
 #' @export
-#' @importFrom flextable body_add_flextable fontsize padding
 #' @importFrom checkmate assert_class vname
+#' @importFrom cli cli_abort
+#' @importFrom flextable as_flextable body_add_flextable fontsize padding
 #'
 #' @return The docx object `doc`
 #'
@@ -86,8 +87,7 @@ body_add_crosstable = function (doc, x, body_fontsize=NULL,
 #'
 #' @author Dan Chaltiel
 #' @export
-#' @importFrom glue glue glue_collapse
-#' @importFrom officer body_add_par
+#' @importFrom cli cli_abort
 #' @importFrom stringr str_squish
 #'
 #' @return The docx object `doc`
@@ -157,9 +157,9 @@ body_add_normal = function(doc, ..., .sep="", style=NULL, squish=TRUE, parse=c("
 #'
 #' @author Dan Chaltiel
 #' @export
-#' @importFrom officer body_add_par
-#' @importFrom stringr str_squish
+#' @importFrom checkmate assert_integerish
 #' @importFrom glue glue
+#' @importFrom stringr str_squish
 #' @examples
 #' library(officer)
 #' library(crosstable)
@@ -169,8 +169,9 @@ body_add_normal = function(doc, ..., .sep="", style=NULL, squish=TRUE, parse=c("
 #'    body_add_title("Description", 2) %>%
 #'    body_add_normal("La table iris a ", ncol(iris), " colonnes.")
 #' #write_and_open(doc)
-body_add_title = function(doc, value, level = 1, squish=TRUE,
+body_add_title = function(doc, value, level=1, squish=TRUE,
                           style = getOption('crosstable_style_heading', "heading")) {
+  assert_integerish(level)
   if(missing(squish)) squish = getOption("crosstable_title_squish", TRUE)
   value = glue(value, .envir = parent.frame())
   if(squish) value = str_squish(value)
@@ -178,7 +179,6 @@ body_add_title = function(doc, value, level = 1, squish=TRUE,
   # body_add_par(doc, value, style = style)
   body_add_parsed(doc, value, style = style)
 }
-
 
 
 #' Add a list to an `officer` document
@@ -222,6 +222,7 @@ body_add_list = function(doc, value, ordered=FALSE, style=NULL, ...){
 #' @rdname body_add_list
 #' @author Dan Chaltiel
 #' @export
+#' @importFrom cli cli_abort
 body_add_list_item = function(doc, value, ordered=FALSE, style=NULL, ...){
   if(is.null(style)){
     if(ordered){
@@ -239,17 +240,30 @@ body_add_list_item = function(doc, value, ordered=FALSE, style=NULL, ...){
 
 
 
-#' Add a list of crosstables
+#' Add a list of tables
 #'
-#' Add a list of crosstables in an officer document
+#' Add a list of tables in an officer document. `crosstables` will be added using [body_add_crosstable()] and `flextables` will be added using [flextable::body_add_flextable()]. Plain dataframes will be converted to flextables.
 #'
 #' @param doc a `rdocx` object, created by [officer::read_docx()]
-#' @param l a named list of tables. Plain dataframes will be converted to flextables.
-#' @param fun a function to be used before each table, most likely to add some kind of title. Should be of the form `function(doc, .name)` where `.name` is the name of the current crosstable of the list. You can also pass `"title2"` to add the name as a title of level 2 between each table, `"newline"` to simply add a new line, or even NULL to not separate them (beware that the table might merge then).
+#' @param l a named list of tables (of class `crosstable`, `flextable`, or `data.frame`).
+#' @param fun_before a function to be used before each table
+#' @param fun_after a function to be used after each table.
+#' @param fun Deprecated
 #' @param ... arguments passed on to [body_add_crosstable()] or [body_add_flextable()]
 #'
-#' @importFrom checkmate assert_list assert_named assert_class assert_multi_class
-#' @importFrom glue glue
+#' @section `fun_before` and `fun_after`:
+#' These should be function of the form `function(doc, .name)` where `.name` is the name of the current table of the list.
+#' You can also pass `"title2"` to add the name as a title of level 2 between each table (works for levels 3 and 4 as well), `"newline"` to simply add a new line, or even `NULL` to not separate them (beware that the tables might merge then).
+#' `fun_before` is designed to add a title while `fun_after` is designed to add a table legend (cf. examples).
+#'
+#' @importFrom checkmate assert_class assert_list
+#' @importFrom cli cli_abort
+#' @importFrom dplyr intersect
+#' @importFrom flextable flextable
+#' @importFrom lifecycle deprecate_warn
+#' @importFrom methods formalArgs
+#' @importFrom purrr keep map
+#' @importFrom rlang is_named is_string
 #'
 #' @return The docx object `doc`
 #' @export
@@ -257,52 +271,69 @@ body_add_list_item = function(doc, value, ordered=FALSE, style=NULL, ...){
 #' @examples
 #' library(officer)
 #' ctl = list(iris2=crosstable(iris2, 1),
-#'            mtcars2=crosstable(mtcars2, 1),
-#'            "just a flextable"=flextable::flextable(mtcars2[1:5,1:5]))
+#'            "Just a flextable"=flextable::flextable(mtcars2[1:5,1:5]),
+#'            "Just a dataframe"=iris2[1:5,1:5])
 #'
-#' myfun = function(doc, .name){
+#' fun1 = function(doc, .name){
 #'     doc %>%
 #'         body_add_title(" This is table '{.name}' as a flex/crosstable", level=2) %>%
 #'         body_add_normal("Here is the table:")
 #' }
-#'
+#' fun2 = function(doc, .name){
+#'   doc %>% body_add_table_legend("{.name}", bookmark=.name)
+#' }
 #' read_docx() %>%
-#'     body_add_title("Separated by subtitle", 1) %>%
-#'     body_add_crosstable_list(ctl, fun="title2") %>%
-#'     body_add_title("Separated by new line", 1) %>%
-#'     body_add_crosstable_list(ctl, fun="newline") %>%
-#'     body_add_title("Separated using a custom function", 1) %>%
-#'     body_add_crosstable_list(ctl, fun=myfun, body_fontsize=8) %>%
-#'     write_and_open()
-body_add_crosstable_list = function(doc, l, fun="title2", ...){
+#'   body_add_title("Separated by subtitle", 1) %>%
+#'   body_add_table_list(ctl, fun_before="title2") %>%
+#'   body_add_break() %>%
+#'   body_add_title("Separated using a custom function", 1) %>%
+#'   body_add_normal("You can therefore use bookmarks, for instance here are
+#'                    tables \\@ref(iris2), \\@ref(just_a_flextable)
+#'                    and \\@ref(just_a_dataframe).") %>%
+#'   body_add_table_list(ctl, fun_before=fun1, fun_after=fun2, body_fontsize=8) %>%
+#'   write_and_open()
+body_add_table_list = function(doc, l, fun_before="title2", fun_after=NULL,
+                               fun=fun_before, ...){
   assert_list(l)
-  if(is.null(names(l))){
-    cli_abort("Crosstable list {.var l} must have names.",
-              class="body_add_crosstable_list_named")
+  if(!missing(fun)){
+    deprecate_warn("5.1.0", "body_add_table_list(fun)", "body_add_table_list(fun_before)")
+  }
+  if(!is_named(l)){
+    cli_abort(c("List {.var l} must have names for all members.",
+                i="Current names: {names(l)}"),
+              class="body_add_table_list_named")
   }
   l = map(l, ~{
-    if(!is.crosstable(.x) && is.data.frame(.x)) .x = flextable(.x)
-    assert_multi_class(.x, c("flextable", "crosstable"))
-    .x
+    if(!is.crosstable(.x) && is.data.frame(.x)) flextable(.x) else .x
   })
 
+  wrong_classes = l %>% keep(~!is.crosstable(.x) && !inherits(.x, "flextable"))
+  if(length(wrong_classes)>0){
+    cli_abort(c("{.fun body_add_table_list} only accepts {.cls crosstable}, {.cls flextable}, and {.cls data.frame}.",
+                x="Wrong class{?es} in the list: {.cls {map_chr(wrong_classes, ~class(.x)[1])}}"),
+              class="body_add_table_list_class")
+  }
+
+  fun0 = function(doc, .name) doc
+  if(is.null(fun_after)) fun_after = fun0
   if(is_string(fun)){
     if(fun=="title2") fun=function(doc, .name) body_add_title(doc, .name, 2)
     else if(fun=="title3") fun=function(doc, .name) body_add_title(doc, .name, 3)
     else if(fun=="title4") fun=function(doc, .name) body_add_title(doc, .name, 4)
     else if(fun=="newline") fun=function(doc, .name) body_add_normal(doc, "")
     else {
-      cli_abort('`fun` should be either a function or one of
-                {.val {c("title2", "title3", "title4", "newline")}}, not {.val {fun}}',
-                class="body_add_crosstable_list_fun_name")
+      cli_abort(c('{.arg fun} should be either a function or one of
+                {.val {c("title2", "title3", "title4", "newline")}}',
+                i="Current value: {.val {fun}}"),
+                class="body_add_table_list_fun_name")
     }
-  } else if(is.null(fun)) fun=function(doc, .name) doc
+  } else if(is.null(fun)) fun=fun0
   assert_class(fun, "function")
 
   if(!identical(formalArgs(fun), c("doc", ".name"))){
     cli_abort(c('`fun` should be of the form `function(doc, .name)`',
                 i="Current arg names: {formalArgs(fun)}"),
-              class="body_add_crosstable_list_fun_args")
+              class="body_add_table_list_fun_args")
   }
 
   argnames = names(list(...))
@@ -311,23 +342,40 @@ body_add_crosstable_list = function(doc, l, fun="title2", ...){
     doc = doc %>% fun(.name=i)
     if(!inherits(doc, "rdocx")){
       cli_abort('fun(doc, .name)` shoud return a {.cls rdocx} value.',
-                class="body_add_crosstable_list_return")
+                class="body_add_table_list_return")
     }
     if(is.crosstable(x)) {
       args = intersect(argnames, names(as.list(args(body_add_crosstable))))
       doc = do.call(body_add_crosstable, c(list(doc=doc, x=x), list(...)[args]))
-    } else {
+    } else if(inherits(x, "flextable")) {
       args = intersect(argnames, names(as.list(args(body_add_flextable))))
       doc = do.call(body_add_flextable, c(list(x=doc, value=x), list(...)[args]))
+    }
+
+    doc = doc %>% fun_after(.name=i)
+    if(!inherits(doc, "rdocx")){
+      cli_abort('fun_after(doc, .name)` shoud return a {.cls rdocx} value.',
+                class="body_add_table_list_return2")
     }
   }
 
   doc
 }
 
-#' @rdname body_add_crosstable_list
+#' @rdname body_add_table_list
 #' @export
-body_add_flextable_list = body_add_crosstable_list
+#' @importFrom lifecycle deprecate_warn
+body_add_flextable_list = function(...){
+  deprecate_warn("0.5.0", "body_add_table_list(=")
+  body_add_table_list(...)
+}
+#' @rdname body_add_table_list
+#' @export
+#' @importFrom lifecycle deprecate_warn
+body_add_crosstable_list = function(...){
+  deprecate_warn("0.5.0", "body_add_table_list(=")
+  body_add_table_list(...)
+}
 
 
 #' Add a legend to a table or a figure
@@ -336,7 +384,7 @@ body_add_flextable_list = body_add_crosstable_list
 #'
 #' @param doc a docx object
 #' @param legend the table legend. As with [glue::glue()], expressions enclosed by braces will be evaluated as R code.
-#' @param bookmark the id of the bookmark. This is the id that should then be called in [body_add_normal()] using the `"\\@ref(id)"` syntax.
+#' @param bookmark the id of the bookmark. This is the id that should then be called in [body_add_normal()] using the `"\\@ref(id)"` syntax. Forbidden characters will be removed.
 #' @param legend_prefix a prefix that comes before the legend, after the numbering
 #' @param legend_style style of of the whole legend. May depend on the docx template. However, if `name_format` is provided with a specific `font.size`, this size will apply to the whole legend for consistency.
 #' @param name_format format of the legend's LHS (legend_name + numbering) using [officer::fp_text_lite()] or [officer::fp_text()]. Default to `fp_text_lite(bold=TRUE)` in addition to the format defined in `legend_style`. Note that the reference to the bookmark will have the same specific format in the text.
@@ -350,7 +398,7 @@ body_add_flextable_list = body_add_crosstable_list
 #' @return The docx object `doc`
 #'
 #' @section Warning:
-#' Be aware that you unfortunately cannot reference a bookmark more than once using this method. Writing: \cr `body_add_normal("Table \\@ref(iris_col1) is about flowers. I like this Table \\@ref(iris_col1).")`\cr
+#' Be aware that you unfortunately cannot reference a bookmark more than once using this method. Writing: \cr `body_add_normal("Table \\@ref(iris_col1) is about flowers. I really like Table \\@ref(iris_col1).")`\cr
 #' will prevent the numbering from applying.
 #' @section What to do if there is still no numbering?:
 #' During the opening of the document, MS Word might ask you to "update the fields", to which you should answer "Yes".  \cr
@@ -359,9 +407,8 @@ body_add_flextable_list = body_add_crosstable_list
 #' @rdname body_add_legend
 #' @name body_add_legend
 #' @author Dan Chaltiel
-#' @importFrom utils packageVersion
-#' @importFrom rlang is_missing check_dots_empty
-#' @importFrom lifecycle is_present deprecate_warn
+#' @importFrom lifecycle deprecated
+#' @importFrom rlang check_dots_empty
 #' @export
 #'
 #' @examples
@@ -406,11 +453,13 @@ body_add_table_legend = function(doc, legend, ..., bookmark=NULL,
   body_add_legend(doc=doc, legend=legend, legend_name=legend_name,
                   bookmark=bookmark, legend_prefix=legend_prefix, legend_style=legend_style,
                   name_format=name_format, seqfield=seqfield,
-                  style=style, legacy=legacy)
+                  style=style, legacy=legacy, envir=parent.frame())
 }
 
 #' @rdname body_add_legend
 #' @export
+#' @importFrom lifecycle deprecated
+#' @importFrom rlang check_dots_empty
 body_add_figure_legend = function(doc, legend, ..., bookmark=NULL,
                                   legend_style=getOption('crosstable_style_legend',
                                                          doc$default_styles$paragraph),
@@ -428,7 +477,7 @@ body_add_figure_legend = function(doc, legend, ..., bookmark=NULL,
   doc = body_add_legend(doc=doc, legend=legend, legend_name=legend_name,
                         bookmark=bookmark, legend_prefix=legend_prefix, legend_style=legend_style,
                         name_format=name_format, seqfield=seqfield,
-                        style=style, legacy=legacy)
+                        style=style, legacy=legacy, envir=parent.frame())
   if(par_after){
     doc=body_add_normal(doc, "")
   }
@@ -437,12 +486,13 @@ body_add_figure_legend = function(doc, legend, ..., bookmark=NULL,
 
 
 #' @importFrom glue glue
-#' @importFrom officer ftext fpar run_bookmark run_word_field body_add_fpar fp_text_lite
+#' @importFrom lifecycle deprecate_warn is_present
+#' @importFrom officer body_add_fpar fp_text_lite fpar ftext run_bookmark run_word_field
 #' @keywords internal
 #' @noRd
 body_add_legend = function(doc, legend, legend_name, bookmark,
                            legend_prefix, legend_style, name_format, seqfield,
-                           style, legacy){
+                           style, legacy, envir){
 
   # nocov start
   if(is_present(style)){
@@ -458,11 +508,13 @@ body_add_legend = function(doc, legend, legend_name, bookmark,
   }
   fp_size = fp_text_lite(font.size=name_format$font.size)
 
-  legend = glue(legend, .envir = parent.frame())
+  legend = glue(legend, .envir=envir)
   legend_name = paste0(legend_name, " ")
 
   bkm = run_word_field(seqfield, prop=name_format)
   if(!is.null(bookmark)){
+    # browser()
+    bookmark = crosstable_clean_names(bookmark)
     bkm = run_bookmark(bookmark, bkm)
   }
 
@@ -528,6 +580,7 @@ body_add_img2 = function(doc, src, width, height,
 #' @author Dan Chaltiel
 #' @export
 #' @importFrom checkmate assert_class
+#' @importFrom rlang check_installed
 #' @examples
 #' if(require("ggplot2") && capabilities(what = "png")){
 #'   library(officer)
@@ -562,7 +615,7 @@ body_add_gg2 = function(doc, value, width = 6, height = 5,
 #' @param doc a `rdocx` object
 #' @param ... named
 #'
-#' @importFrom officer body_replace_text_at_bkm
+#' @importFrom glue glue
 #' @importFrom purrr iwalk safely
 #' @return The docx object `doc`
 #' @author Dan Chaltiel
@@ -616,6 +669,7 @@ crosstable_luafilters = function(){
 #' @return a list with all bookmarks
 #'
 #' @importFrom checkmate assert_class
+#' @importFrom rlang check_installed
 #' @author Dan Chaltiel
 #' @export
 docx_bookmarks2 = function(x, return_vector=FALSE,
@@ -642,7 +696,7 @@ docx_bookmarks2 = function(x, return_vector=FALSE,
   }
   if(return_vector) return(unname(unlist(rtn)))
   rtn
-}#nocov end
+}
 
 
 #' Alternative to default `officer` print() function. Write the file and try to open it right away.
@@ -656,9 +710,9 @@ docx_bookmarks2 = function(x, return_vector=FALSE,
 #'
 #' @author Dan Chaltiel
 #' @export
-#' @importFrom utils browseURL
+#' @importFrom cli cli_abort
 #' @importFrom stringr str_detect
-#' @importFrom glue glue
+#' @importFrom utils browseURL
 #'
 #' @examples
 #' library(officer)
@@ -705,7 +759,7 @@ write_and_open = function(doc, docx.file){
   }, finally={}
   )
 
-}    # nocov end
+}
 
 
 
@@ -750,11 +804,11 @@ generate_autofit_macro = function(){
 
 #' Parse value for multiple regexp to unravel formats (bold, italic and underline) and reference calls.
 #'
-#' @importFrom stringr str_split str_detect str_match str_extract_all
 #' @importFrom glue glue
-#' @importFrom utils packageVersion
-#' @importFrom purrr map map_lgl discard set_names
-#' @importFrom officer run_word_field ftext body_add_fpar fp_text_lite
+#' @importFrom officer body_add_fpar body_add_par fp_text_lite ftext run_word_field
+#' @importFrom purrr discard map map_lgl
+#' @importFrom rlang set_names
+#' @importFrom stringr str_detect str_extract_all str_match str_split
 #'
 #' @keywords internal
 #' @noRd
@@ -763,7 +817,7 @@ body_add_parsed = function(doc, value, style, parse_ref=TRUE, parse_format=TRUE,
     return(body_add_par(doc, value, style))
   }
   reg_r = list(
-    ref = "\\\\@ref\\(.*?\\)"
+    ref = "\\?\\?@ref\\(.*?\\)"
   )
   reg_f = list(
     bold = "\\*\\*(.+?)\\*\\*",
@@ -792,12 +846,13 @@ body_add_parsed = function(doc, value, style, parse_ref=TRUE, parse_format=TRUE,
     if(length(.format)==0) return(ftext(.x))
 
     if(any(.format=="ref")){
-      bkm = str_match(.x, "\\\\@ref\\((.*?)\\)")[,2]
+      bkm = str_match(.x, "\\?\\?@ref\\((.*?)\\)")[,2]
       return(run_word_field(glue(' REF {bkm} \\h ')))
     }
     if(any(.format=="code")){
       fp = fp_text_lite(font.family=getOption("crosstable_font_code", "Consolas"))
-      return( ftext(.x, fp))
+      .x = str_match(.x, regex$code)[[2]]
+      return(ftext(.x, fp))
     }
     rex = regex[.format]
     for(i in rex){
@@ -811,7 +866,6 @@ body_add_parsed = function(doc, value, style, parse_ref=TRUE, parse_format=TRUE,
 
     ftext(.x, fp)
   })
-
 
   p=do.call(fpar, args=par_list)
   body_add_fpar(doc, p, style)

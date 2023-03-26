@@ -83,7 +83,7 @@ display_test = function(test, digits = 4, method = TRUE) {
 #' @param x vector
 #' @param y another vector
 #' @return a list with two components: p.value and method
-#' @importFrom stats chisq.test fisher.test
+#' @importFrom stats chisq.test
 #' @export
 #' @author Dan Chaltiel, David Hajage
 test_tabular_auto = function(x, y) {
@@ -94,13 +94,29 @@ test_tabular_auto = function(x, y) {
   else if (all(exp >= 5))
     test = chisq.test(x, y, correct = FALSE)
   else
-    test = fisher.test(x, y)
+    test = fisher_test(x, y)
 
   p = test$p.value
   method = test$method
   list(p.value = p, method = method)
 }
 
+
+#' Prevent `fisher.test()` from failing
+#' @importFrom stats fisher.test
+#' @importFrom stringr str_detect
+#' @keywords internal
+#' @noRd
+#' @source https://stackoverflow.com/q/17052639/3888000
+fisher_test = function(x, y, B=getOption("crosstable_fishertest_B", 1e5)){
+  tryCatch(
+    fisher.test(x, y),
+    error=function(e){
+      if(!str_detect(e$message, "consider using 'simulate.p.value=TRUE'")) stop(e)
+      fisher.test(x, y, simulate.p.value=TRUE, B=B)
+    }
+  )
+}
 
 
 #' test for mean comparison
@@ -113,7 +129,7 @@ test_tabular_auto = function(x, y) {
 #' @return a list with two components: p.value and method
 #' @author Dan Chaltiel, David Hajage
 # @importFrom nortest ad.test
-#' @importFrom stats shapiro.test bartlett.test kruskal.test t.test oneway.test
+#' @importFrom stats bartlett.test kruskal.test oneway.test t.test
 #' @export
 test_summarize_auto = function(x, g) {
   ng = table(g)
@@ -172,6 +188,7 @@ test_summarize_auto = function(x, g) {
 #' @return the correlation test with appropriate method
 #' @author Dan Chaltiel, David Hajage
 #' @export
+#' @importFrom stats cor.test
 #' @importFrom stringr str_detect
 test_correlation_auto = function(x, by, method) {
   exact=TRUE
@@ -203,6 +220,7 @@ test_correlation_auto = function(x, by, method) {
 #' @return a list with two components: p.value and method
 #' @author Dan Chaltiel, David Hajage
 #' @export
+#' @importFrom rlang check_installed
 #' @importFrom stats pchisq
 test_survival_logrank = function(formula) {
   check_installed("survival", reason="for survival data to be described using `crosstable()`.")
@@ -223,6 +241,7 @@ test_survival_logrank = function(formula) {
 #' @return a list with two components: p.value and method
 #' @author Dan Chaltiel
 #' @export
+#' @importFrom rlang check_installed
 #' @importFrom stats lm
 #'
 #' @examples
@@ -253,7 +272,7 @@ test_summarize_linear_contrasts = function(x, y){
 #' TODO auto normality testing may require some more thought...
 #'
 #' @keywords internal
-#' @importFrom stats shapiro.test na.omit
+#' @importFrom stats na.omit shapiro.test
 # @importFrom nortest ad.test
 #' @noRd
 test_normality = function(x, g){
@@ -342,7 +361,7 @@ wilcox_test2 = function(x, g) {
 
 # nocov start
 
-#' @importFrom stats shapiro.test bartlett.test wilcox.test kruskal.test t.test oneway.test
+#' @importFrom stats bartlett.test kruskal.test oneway.test shapiro.test t.test wilcox.test
 #' @keywords internal
 #' @noRd
 test_summarize_auto.dan = function (x, g) {
@@ -399,7 +418,7 @@ test_summarize_auto.dan = function (x, g) {
 #TODO add CochranArmitageTest
 
 # @importFrom DescTools CochranArmitageTest
-#' @importFrom stats cor.test chisq.test fisher.test
+#' @importFrom stats chisq.test cor.test
 #' @keywords internal
 #' @noRd
 test_tabular_auto2 = function (x, y) {
@@ -416,10 +435,9 @@ test_tabular_auto2 = function (x, y) {
       test = list(p.value = NULL, method = NULL)
     else if (all(exp >= 5))
       test = suppressWarnings(chisq.test(x, y, correct = FALSE))
-    else test = fisher.test(x, y)
+    else test = fisher_test(x, y)
   }
   p = test$p.value
   method = test$method
   list(p.value = p, method = method)
 }
-# nocov end

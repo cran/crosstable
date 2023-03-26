@@ -12,7 +12,9 @@
 #' @param only_round default argument for [format_fixed()]
 #' @param verbosity_autotesting one of `default`, `quiet`, or `verbose`
 #' @param verbosity_duplicate_cols one of `default`, `quiet`, or `verbose`.
+#' @param crosstable_fishertest_B number of simulations to perform when `fisher.test()` is failing (FEXACT error 7).
 #' @param total For setting [crosstable()] arguments globally.
+#' @param margin For setting [crosstable()] arguments globally.
 #' @param percent_pattern For setting [crosstable()] arguments globally.
 #' @param percent_digits For setting [crosstable()] arguments globally.
 #' @param num_digits For setting [crosstable()] arguments globally.
@@ -21,6 +23,7 @@
 #' @param funs For setting [crosstable()] arguments globally.
 #' @param funs_arg For setting [crosstable()] arguments globally.
 #' @param cor_method For setting [crosstable()] arguments globally.
+#' @param drop_levels For setting [crosstable()] arguments globally.
 #' @param unique_numeric For setting [crosstable()] arguments globally.
 #' @param date_format For setting [crosstable()] arguments globally.
 #' @param times For setting [crosstable()] arguments globally.
@@ -68,6 +71,10 @@
 #' @seealso [crosstable_peek_options()] and [crosstable_reset_options()]
 #' @return Nothing, called for its side effects
 #' @export
+#' @importFrom cli cli_warn
+#' @importFrom lifecycle deprecate_warn deprecated
+#' @importFrom rlang caller_env
+#' @importFrom stringr str_starts
 crosstable_options = function(
     ...,
     #crosstable()
@@ -75,8 +82,9 @@ crosstable_options = function(
     only_round=FALSE,
     verbosity_autotesting="default",
     verbosity_duplicate_cols="default",
-    total, percent_pattern, percent_digits, num_digits, showNA, label, funs, funs_arg,
-    cor_method, unique_numeric, date_format, times, followup, test_arg, effect_args,
+    crosstable_fishertest_B=1e5,
+    total, percent_pattern, margin, percent_digits, num_digits, showNA, label, funs, funs_arg,
+    cor_method, drop_levels, unique_numeric, date_format, times, followup, test_arg, effect_args,
     #as_flextable()
     wrap_id=70,
     compact_padding=25,
@@ -149,8 +157,8 @@ crosstable_options = function(
 #' @param keep_null set to TRUE to get a list
 #'
 #' @return A named list of crosstable options
-#' @importFrom rlang peek_options
 #' @importFrom purrr discard
+#' @importFrom rlang peek_options
 #' @export
 crosstable_peek_options = function(keep_null=FALSE){
   x = formals(crosstable_options)
@@ -165,9 +173,9 @@ crosstable_peek_options = function(keep_null=FALSE){
 #' @param quiet set to `TRUE` to remove the message.
 #'
 #' @return Nothing, called for its side effects
-#' @importFrom rlang set_names
 #' @importFrom cli cli_inform
 #' @importFrom purrr map
+#' @importFrom rlang set_names
 #' @export
 crosstable_reset_options = function(quiet=FALSE){
   args_ok = names(formals(crosstable_options)) %>% .[!. %in% c("...", "reset", ".local")]

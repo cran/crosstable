@@ -1,16 +1,67 @@
 Crosstables for descriptive analyses. See documentation at <https://danchaltiel.github.io/crosstable/> and browse code at <https://github.com/DanChaltiel/crosstable>.
 
+# crosstable 0.6.0 <sub><sup>2023-03-26</sup></sub>
+
+#### New features
+
+-   New function `transpose_crossable()` (or simply `t()`), which transposes a crosstable so that the labels and column names are swapped.\
+    ```r
+    ct = crosstable(mtcars2, c(mpg, drat, wt, qsec))
+    t_ct = t(ct)
+    as_flextable(t_ct)
+    ```
+
+-   New function `pivot_crossable()`, which pivots a crosstable so that the `variable` column is spread as several columns.\
+    ```r
+    ct = crosstable(mtcars2, c(mpg, drat, wt, qsec))
+    p_ct = pivot_crosstable(ct)
+    as_flextable(p_ct)
+    ```
+    
+-   `body_add_table_list()` now replaces `body_add_crosstable_list()` and `body_add_flextable_list()`. It allows both crosstables and flextable (and even dataframes, which are turned to flextables first) and has a new argument `fun_after` to control what comes after the table. See examples in `?body_add_table_list`.
+
+-   New function `get_percent_pattern()`. See also the new vignette `vignette("percent_pattern")`.
+
+-   New argument `crosstable(drop_levels=TRUE)` to drop unused levels in factors.
+
+-   `copy_label_from()` now works on dataframes as well.
+
+-   `as_flextable(header_show_n_pattern)` can now be a list of names `cell` and `total`, so that the "Total" column can be labelled too.
+
+#### Breaking changes (minor)
+
+-   `showNA="no"` is now consistent with `stats::addmargins()`, `gtsummary::tbl_cross(missing="no")`, and `janitor::tabyl(show_na=FALSE)`. It now actually removes all `NA` from the equation, instead of not doing much (#24).
+
+-   In `percent_patern`, the proportion relative to the total sample `p_cell` has been renamed to `p_tot` for clarity.
+
+#### Bug fixes and improvements
+
+-   Removed unexpected warning "NaNs produced" thrown when calculating percentages in totals while the number of NA is higher than the other classes (#20).
+-   The output is now correct when `header_show_n=TRUE` and `remove_header_keys=TRUE` while using multiple by variables (#21).
+-   Flextables will not have missing columns when using multiple by variables that has same key levels.
+-   String interpolation works as intended in `body_add_xxx_legend()`.
+-   `crosstable()` will not fail if `fisher.test()` fails [#28]
+-   `forcats::fct_explicit_na()` is not used anymore [#29]
+-   `body_add_normal()` now removes ``` symbols when showing code [#31]
+-   Trailing commas will not make `apply_labels()` fail anymore [#32]
+-   Performance improvement (around 30% for small tables) as confidence intervals are not calculated anymore when not needed [#34]
+
+Many thanks to Stephan Daus (@sda030) for his bug reports and feedback on this release.
+
 # crosstable 0.5.0 <sub><sup>2022-08-16</sup></sub>
 
 #### New features
 
--   New `clean_names_with_labels()` which clean the names of the dataframe but keeps the old names as labels. Obviously inspired by {janitor}.
--   New variables `n_col`, `n_row`, and `n_tot` available for `percent_pattern`. Also, every variable has now its counterpart with the `_na` suffix which accounts for missing values. For instance, one can now write: 
-```r
+-   New `clean_names_with_labels()` which cleans the names of the dataframe but keeps the old names as labels. Obviously inspired by `{janitor}`.
+-   New variables `n_col`, `n_row`, and `n_tot` available for `percent_pattern`. Also, every variable has now its counterpart with the `_na` suffix which accounts for missing values.\
+    For instance, one can now write:
+
+``` r
     crosstable(mtcars2, cyl, percent_pattern="{p_col} ({n}/{n_col}) [95%CI: {p_col_inf}; {p_col_sup}]")
     crosstable(mtcars2, cyl, percent_pattern="{p_col_na} ({n}/{n_col_na}) [95%CI: {p_col_inf}; {p_col_sup}]")
 ```
-- `percent_pattern` can now be a list of characters with names `body`, `total_row`, `total_col`, and `total_all` to also control the pattern in other parts of the crosstable than the body.
+
+-   `percent_pattern` can now be a list of characters with names `body`, `total_row`, `total_col`, and `total_all` to also control the pattern in other parts of the crosstable than the body.
 
 #### Improvements
 
@@ -18,7 +69,7 @@ Crosstables for descriptive analyses. See documentation at <https://danchaltiel.
 -   `crosstable_test_args()` and `crosstable_effect_args()` now have arguments to easily control the non-default parameters.
 -   Allow scientific notation for big numbers. Default to numbers for `which abs(log10(x))>4`. This can be controlled using options, e.g. `crosstable_options(scientific_log=5)`.
 -   In MS Word, crosstables will now break across pages by default. You can revert this by using `body_add_crosstable(allow_break=FALSE)` or using `crosstable_options()`. This is the pendant of `keepnext` in officer/flextable.
--   New argument `body_add_crosstable(max_cols=25)`, which limits the size of crosstables in Word documents. This prevents very large tables to be wrongly included. 
+-   New argument `body_add_crosstable(max_cols=25)`, which limits the size of crosstables in Word documents. This prevents very large tables to be wrongly included.
 -   `peek()` is now usable on non-crosstable objects as well. `as_flextable()` method will be applied on the object if available, otherwise `flextable()` will be applied.
 -   Better error messages in `import_labels()` when `data_label` doesn't have the right columns.
 
