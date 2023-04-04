@@ -65,3 +65,56 @@
        "foo" "ffoo" 
       
 
+# clean_names_with_labels
+
+    Code
+      x = data.frame(`name with space` = 1, TwoWords = 1, `total $ (2009)` = 1,
+        àccénts = 1, check.names = FALSE)
+      cleaned = clean_names_with_labels(x)
+      names(cleaned)
+    Output
+      [1] "name_with_space" "twowords"        "total_2009"      "accents"        
+    Code
+      get_label(cleaned)
+    Output
+        name_with_space          twowords        total_2009           accents 
+      "name with space"        "TwoWords"  "total $ (2009)"         "àccénts" 
+    Code
+      cleaned = clean_names_with_labels(x, except = "name with space")
+      names(cleaned)
+    Output
+      [1] "name with space" "twowords"        "total_2009"      "accents"        
+    Code
+      get_label(cleaned)
+    Output
+        name with space          twowords        total_2009           accents 
+      "name with space"        "TwoWords"  "total $ (2009)"         "àccénts" 
+
+# rename_dataframe_with_labels 
+
+    Code
+      rename_with_labels(dat) %>% names()
+    Output
+      [1] "Model"                 "Miles/(US) gallon"     "Number of cylinders"  
+      [4] "Displacement (cu.in.)" "Gross horsepower"     
+    Code
+      rename_with_labels(dat, except = 5) %>% names()
+    Output
+      [1] "Model"                 "Miles/(US) gallon"     "Number of cylinders"  
+      [4] "Displacement (cu.in.)" "hp"                   
+    Code
+      rename_with_labels(dat, except = hp) %>% names()
+    Output
+      [1] "Model"                 "Miles/(US) gallon"     "Number of cylinders"  
+      [4] "Displacement (cu.in.)" "hp"                   
+    Code
+      rename_with_labels(dat, except = "hp") %>% names()
+    Output
+      [1] "Model"                 "Miles/(US) gallon"     "Number of cylinders"  
+      [4] "Displacement (cu.in.)" "hp"                   
+    Code
+      rename_with_labels(dat, except = 99) %>% names()
+    Output
+      [1] "Model"                 "Miles/(US) gallon"     "Number of cylinders"  
+      [4] "Displacement (cu.in.)" "Gross horsepower"     
+

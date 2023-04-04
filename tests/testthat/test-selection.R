@@ -242,7 +242,7 @@ test_that("crosstable limit tests: warnings", {
 
 test_that("crosstable limit tests: deprecated features", {
   #dont use ellipsis
-  # lifecycle::expect_deprecated(crosstable(iris2, Sepal.Length, Sepal.Width, by=Species))
+  lifecycle::expect_deprecated(crosstable(iris2, Sepal.Length, Sepal.Width, by=Species))
 
   #dont use .vars
   lifecycle::expect_defunct(crosstable(iris2, .vars=c(Sepal.Length, Sepal.Width), by=Species))
