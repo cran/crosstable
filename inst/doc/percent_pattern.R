@@ -5,7 +5,7 @@ knitr::opts_chunk$set(
   warning=FALSE, 
   message=FALSE
 )
-options(width = 100)
+old = options(width = 100)
 
 ## ----setup----------------------------------------------------------------------------------------
 library(crosstable)
@@ -69,4 +69,7 @@ crosstable(mtcars3, cyl, by=vs,
            percent_pattern=ULTIMATE_PATTERN) %>% 
   as_flextable() %>% 
   flextable::theme_box()
+
+## ---- include = FALSE---------------------------------------------------------
+options(old)
 

@@ -163,7 +163,7 @@ as_flextable.crosstable = function(x, keep_id=FALSE, by_header=NULL,
       flextable(col_keys=cols) %>%
       fontsize(size=fontsizes$body) %>%
       hline(i=sep.rows, border=border1) %>%
-      merge_v(j=id, target=body_merge, part = "body")
+      merge_v(j=id, target=body_merge, part="body")
   }
 
   if(n_levels==0) {
@@ -347,7 +347,7 @@ peek = function(x, docx=getOption("crosstable_peek_docx", TRUE), ...) {
     x=as_workbook(x, ...)
     filename = tempfile(fileext=".xlsx")
     openxlsx::saveWorkbook(x, file=filename)
-    if(interactive()) browseURL(filename)
+    if(interactive()) browseURL(normalizePath(filename))
   }
   invisible()
 }

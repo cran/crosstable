@@ -106,7 +106,7 @@ body_add_crosstable = function (doc, x, body_fontsize=NULL,
 #' doc = doc %>%
 #'     body_add_normal("You can write text in *italic1*, _underlined1_, **bold1**, and `code`,
 #'                     and you can also add * **references** *, for instance a ref to Table
-#'                     \\@ref(my_table). Multiple spaces are ignored (squished) so that you
+#'                     @ref(my_table). Multiple spaces are ignored (squished) so that you
 #'                     can enter multiline text.") %>%
 #'     body_add_normal() %>%
 #'     body_add_normal("Here I should use `body_add_crosstable()` to add a table before the
@@ -413,9 +413,10 @@ body_add_crosstable_list = function(...){
 #'
 #' @examples
 #' library(officer)
-#' p=ggplot2::quickplot(x=Sepal.Length, y=Sepal.Width, color=Species, data=iris)
+#' library(ggplot2)
+#' p = ggplot(iris, aes(x=Sepal.Length, y=Sepal.Width, color=Species)) + geom_point()
 #' fp_italic = fp_text_lite(italic=TRUE, font.size=10)
-#' x=read_docx() %>%
+#' x = read_docx() %>%
 #'     body_add_normal("There is Table \\@ref(iris_col1) and Table \\@ref(iris_col2). ",
 #'                     "The `iris` dataset is about flowers.") %>%
 #'     body_add_normal() %>%
@@ -672,8 +673,9 @@ crosstable_luafilters = function(){
 #' @importFrom rlang check_installed
 #' @author Dan Chaltiel
 #' @export
+# nocov start
 docx_bookmarks2 = function(x, return_vector=FALSE,
-                           target=c("all", "header", "body", "footer")) {#nocov start
+                           target=c("all", "header", "body", "footer")) {
   #cannot test nor add examples as there is officer::body_bookmark() but no officer::head_bookmark()
 
   assert_class(x, "rdocx")
@@ -697,6 +699,7 @@ docx_bookmarks2 = function(x, return_vector=FALSE,
   if(return_vector) return(unname(unlist(rtn)))
   rtn
 }
+# nocov end
 
 
 #' Alternative to default `officer` print() function. Write the file and try to open it right away.
@@ -738,28 +741,28 @@ write_and_open = function(doc, docx.file){
   }, warning=function(w) {
     message(w)
     if(str_detect(w$message, "Permission denied")){
-      cli_abort(c("Permission denied. Is the file already open?", #nocov
-                  i="File: {docx.file}"), #nocov
-                class="crosstable_permission_denied") #nocov
+      cli_abort(c("Permission denied. Is the file already open?",
+                  i="File: {docx.file}"),
+                class="crosstable_permission_denied")
     }
   })
 
   tryCatch({
     print(doc, target=docx.file)
-    if(interactive()) browseURL(docx.file)
+    if(interactive()) browseURL(normalizePath(docx.file))
   }, error=function(e) {
     if(str_detect(e$message, "Permission denied")){
-      cli_abort(c("Permission denied. Is the file already open?",  #nocov
-                  i="File: {docx.file}"), #nocov
-                class="crosstable_permission_denied") #nocov
+      cli_abort(c("Permission denied. Is the file already open?",
+                  i="File: {docx.file}"),
+                class="crosstable_permission_denied")
     }
     stop(e)
   }, warning=function(w) {
     warning(w)
   }, finally={}
   )
-
 }
+# nocov end
 
 
 
@@ -827,11 +830,17 @@ body_add_parsed = function(doc, value, style, parse_ref=TRUE, parse_format=TRUE,
   reg_c = list(
     code = "`(.+?)`"
   )
+  #TODO officer::run_linebreak()
   if(isFALSE(parse_ref)) reg_r = list()
   if(isFALSE(parse_format)) reg_f = list()
   if(isFALSE(parse_code)) reg_c = list()
-  regex = c(reg_f, reg_r, reg_c)
-  rex_all = paste(regex, collapse="|")
+  reg = c(reg_f, reg_r, reg_c)
+  rex_all = paste(reg, collapse="|")
+
+  if(!str_detect(value, rex_all)){
+    return(body_add_par(doc, value, style))
+  }
+
 
   par_not_format = str_split(value, rex_all)[[1]]
   par_format = str_extract_all(value, rex_all)[[1]]
@@ -840,7 +849,7 @@ body_add_parsed = function(doc, value, style, parse_ref=TRUE, parse_format=TRUE,
   altern = c(par_not_format, par_format)[order(c(seq_along(par_not_format)*2 - 1,
                                                  seq_along(par_format)*2))]
   par_list = map(altern, ~{
-    .format = map_lgl(regex, function(pat) str_detect(.x, pattern=pat)) %>%
+    .format = map_lgl(reg, function(pat) str_detect(.x, pattern=pat)) %>%
       discard(isFALSE) %>% names()
 
     if(length(.format)==0) return(ftext(.x))
@@ -851,10 +860,10 @@ body_add_parsed = function(doc, value, style, parse_ref=TRUE, parse_format=TRUE,
     }
     if(any(.format=="code")){
       fp = fp_text_lite(font.family=getOption("crosstable_font_code", "Consolas"))
-      .x = str_match(.x, regex$code)[[2]]
+      .x = str_match(.x, reg$code)[[2]]
       return(ftext(.x, fp))
     }
-    rex = regex[.format]
+    rex = reg[.format]
     for(i in rex){
       if(str_detect(.x, i)){
         .x = str_match(.x, i)[[2]]
@@ -862,6 +871,8 @@ body_add_parsed = function(doc, value, style, parse_ref=TRUE, parse_format=TRUE,
     }
 
     fp_args = rep(TRUE, length(.format)) %>% set_names(.format) %>% as.list()
+    print("fp_args")
+    print(fp_args)
     fp = do.call(fp_text_lite, fp_args)
 
     ftext(.x, fp)

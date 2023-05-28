@@ -1,23 +1,31 @@
 Crosstables for descriptive analyses. See documentation at <https://danchaltiel.github.io/crosstable/> and browse code at <https://github.com/DanChaltiel/crosstable>.
 
-# crosstable 0.6.1 <sub><sup>2023-03-26</sup></sub>
+# crosstable 0.6.2 <sub><sup>2023-05-26</sup></sub>
 
-CRAN Check fix
+#### Bug fixes and improvements
+
+-   Fixes for CRAN checks.
+-   Fixes `write_and_open()` not opening sometimes.
+-   Trailing commas will not make `crosstable_options()` fail anymore.
+
+# crosstable 0.6.1 <sub><sup>2023-04-03</sup></sub>
+
+Fixes for CRAN checks.
 
 # crosstable 0.6.0 <sub><sup>2023-03-26</sup></sub>
 
 #### New features
 
--   New function `transpose_crossable()` (or simply `t()`), which transposes a crosstable so that the labels and column names are swapped.\
+-   New function `transpose_crosstable()` (or simply `t()`), which transposes a crosstable so that `by` is in rows instead of columns.\
     ```r
-    ct = crosstable(mtcars2, c(mpg, drat, wt, qsec))
+    ct = crosstable(mtcars2, c(mpg, drat), by=am)
     t_ct = t(ct)
-    as_flextable(t_ct)
+    as_flextable(t_ct, by_header="Variables")
     ```
 
--   New function `pivot_crossable()`, which pivots a crosstable so that the `variable` column is spread as several columns.\
+-   New function `pivot_crosstable()`, which pivots a crosstable so that `variable` is spread as several columns.\
     ```r
-    ct = crosstable(mtcars2, c(mpg, drat, wt, qsec))
+    ct = crosstable(mtcars2, c(mpg, drat))
     p_ct = pivot_crosstable(ct)
     as_flextable(p_ct)
     ```

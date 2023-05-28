@@ -5,8 +5,8 @@ knitr::opts_chunk$set(
   warning=FALSE, 
   message=FALSE
 )
-options(width = 100, 
-        crosstable_verbosity_autotesting="quiet")
+old = options(width = 100, 
+              crosstable_verbosity_autotesting="quiet")
 library(flextable)
 
 ## ----css, echo=FALSE, results="asis"--------------------------------------------------------------
@@ -105,4 +105,7 @@ crosstable(mtcars2, c(vs, qsec), by=am, funs=mean, effect=TRUE) %>%
 library(flextable)
 crosstable(mtcars2, c(vs, qsec), by=am, funs=mean, test=TRUE) %>% 
   as_flextable(keep_id=TRUE)
+
+## ---- include = FALSE---------------------------------------------------------
+options(old)
 

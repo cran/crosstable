@@ -5,7 +5,7 @@ comment = "#>",
 warning=FALSE, 
 message=FALSE
 )
-options(width = 100)
+old = options(width = 100)
 
 ## ----crosstable-bare------------------------------------------------------------------------------
 library(crosstable)
@@ -64,4 +64,7 @@ crosstable(mtcars2, sqrt(mpg) + I(qsec^2) ~ ifelse(mpg>20,"mpg>20","mpg<20"),
 ## ----crosstable-ultimate1-------------------------------------------------------------------------
 crosstable(mtcars2, c(where(is.numeric), -matches("^d|w"), drat), label=FALSE) %>% 
   as_flextable()
+
+## ---- include = FALSE---------------------------------------------------------
+options(old)
 

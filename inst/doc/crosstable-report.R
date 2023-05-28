@@ -3,8 +3,8 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
-options(width = 100, 
-        crosstable_verbosity_autotesting="quiet")
+old = options(width = 100, 
+              crosstable_verbosity_autotesting="quiet")
 library(crosstable)
 library(dplyr)
 
@@ -58,4 +58,7 @@ if(file.exists("../examples")){
 
 ## ----print, eval=FALSE----------------------------------------------------------------------------
 #  write_and_open(doc, "vignette_officer.docx")
+
+## ---- include = FALSE---------------------------------------------------------
+options(old)
 
