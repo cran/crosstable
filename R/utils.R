@@ -88,6 +88,20 @@ formalArgs = function (def){
   names(formals(def, envir = parent.frame()))
 }
 
+#' Extract column names from a `call`
+#' @importFrom stringr str_extract str_split_fixed str_trim
+#' @keywords internal
+#' @noRd
+call_vars = function(a){
+  r = a %>% str_extract("c\\((.*?)\\)", group=1)
+  if(all(is.na(r))){
+    r = a %>% paste(collapse =", ")
+  } else {
+    r = r %>%
+      str_split_fixed(",", 2) %>% t() %>% c() %>% str_trim()
+  }
+  r
+}
 
 #' Used for defaulting S3 methods to loaded function
 #' @importFrom cli cli_warn
@@ -232,6 +246,15 @@ is.Surv = function(x) {
 is.date = function(x){
   inherits(x, "Date") || inherits(x, "POSIXt") ||
     inherits(x, "POSIXct") || inherits(x, "POSIXlt")
+}
+
+#' test
+#'
+#' @param x x
+#' @keywords internal
+#' @noRd
+is.period = function(x){
+  inherits(x, c("Period", "hms", "difftime"))
 }
 
 #' paste all classes (minus "labelled")
@@ -448,7 +471,7 @@ confint_numeric = function(object, level=0.95, B=0){
 #' @param level the confidence level required
 #' @source binom:::binom.confint
 #' @source https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval
-#' @note validé avec PropCIs::scoreci
+#' @note validated against PropCIs::scoreci
 #' @importFrom checkmate assert_integerish assert_numeric
 #' @importFrom stats qnorm
 #' @keywords internal

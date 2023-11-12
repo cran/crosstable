@@ -57,7 +57,7 @@ get_label = function(x, default=names(x), object=FALSE, simplify=TRUE){
 #' Set the "label" attribute of an object
 #'
 #' @param x object to label.
-#' @param value value of the label. If `x` is a list/data.frame, all the labels will be set recursively
+#' @param value value of the label. If `x` is a list/data.frame, the labels will all be set recursively. If `value` is a function, it will be applied to the current labels of `x`.
 #' @param object if `x` is a list/data.frame, `object=TRUE` will force setting the labels of the object instead of the children
 #'
 #' @return An object of the same type as `x`, with labels
@@ -68,7 +68,7 @@ get_label = function(x, default=names(x), object=FALSE, simplify=TRUE){
 #' @importFrom cli cli_abort
 #' @importFrom dplyr intersect
 #' @importFrom purrr map_chr
-#' @importFrom rlang is_named
+#' @importFrom rlang as_function is_named is_formula is_function
 #' @seealso [get_label()], [import_labels()], [remove_label()]
 #' @examples
 #' library(dplyr)
@@ -79,7 +79,10 @@ get_label = function(x, default=names(x), object=FALSE, simplify=TRUE){
 #' mtcars %>%
 #'    copy_label_from(mtcars2) %>%
 #'    crosstable(c(mpg, vs))
+#' mtcars2 %>% set_label(toupper) %>% get_label()
 set_label = function(x, value, object=FALSE){
+  if(is_formula(value)) value = as_function(value)
+  if(is_function(value)) return(set_label(x, value(get_label(x))))
   if(is.null(value) || all(is.na(value))) return(x)
   value = map_chr(value, as.character)
   assert_character(value)
@@ -237,7 +240,6 @@ clean_names_with_labels = function(df, except=NULL, .fun=getOption("crosstable_c
 #' @return An object of the same type as `data`, with labels
 #'
 #' @importFrom cli cli_warn
-#' @importFrom purrr imap_dfr
 #' @importFrom rlang current_env
 #' @author Dan Chaltiel
 #' @export
@@ -256,12 +258,9 @@ apply_labels = function(data, ..., warn_missing=FALSE) {
              call=current_env())
   }
 
-  imap_dfr(data, ~{
-    if (.y %in% names(data)) {
-      .x = set_label(.x, args[[.y]])
-    }
-    .x
-  })
+  data %>%
+    mutate(across(everything(),
+                  ~set_label(.x, args[[cur_column()]])))
 }
 
 
@@ -284,7 +283,6 @@ apply_labels = function(data, ..., warn_missing=FALSE) {
 #' @importFrom cli cli_abort cli_warn
 #' @importFrom dplyr all_of select
 #' @importFrom lifecycle deprecate_warn deprecated is_present
-#' @importFrom purrr imap_dfr
 #' @importFrom rlang current_env
 #' @importFrom tibble column_to_rownames
 #' @importFrom tidyr drop_na
@@ -352,11 +350,11 @@ import_labels = function(.tbl, data_label,
     select(all_of(c(name_from, label_from))) %>%
     drop_na() %>%
     column_to_rownames(name_from)
-  .tbl %>% imap_dfr(~{
-    label = data_label[.y, label_from]
-    set_label(.x, label)
-  })
 
+  .tbl %>% mutate(across(everything(), ~{
+    label = data_label[cur_column(), label_from]
+    set_label(.x, label)
+  }))
 }
 
 #' @rdname import_labels

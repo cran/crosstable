@@ -1,6 +1,6 @@
 Package: crosstable
 Title: Crosstables for Descriptive Analyses
-Version: 0.6.2
+Version: 0.7.0
 Authors@R: 
     c(person(given = "Dan",
              family = "Chaltiel",
@@ -24,9 +24,9 @@ Imports: checkmate (>= 1.9.0), cli (>= 3.0.0), dplyr (>= 1.1.0),
         0.2.3), rlang (>= 1.0.0), stats, stringr (>= 1.4.0), tibble (>=
         1.1), tidyr (>= 1.0.0), utils,
 Suggests: callr, covr, crayon, xml2, digest, gt, expss, ggplot2,
-        gmodels, Hmisc, jsonlite, knitr, openxlsx, rmarkdown, sloop,
-        stringi, survival, systemfonts, tidyselect, testthat (>=
-        3.0.0), withr, waldo
+        gmodels, Hmisc, hms, jsonlite, knitr, lubridate, openxlsx,
+        rmarkdown, sloop, stringi, survival, systemfonts, tidyselect,
+        testthat (>= 3.0.0), withr, waldo
 VignetteBuilder: knitr
 Encoding: UTF-8
 LazyData: true
@@ -35,9 +35,9 @@ Config/testthat/edition: 3
 Config/testthat/parallel: true
 Config/testthat/start-first: by_factor , effects, officer
 NeedsCompilation: no
-Packaged: 2023-05-27 08:29:22 UTC; Dan
+Packaged: 2023-11-12 20:13:56 UTC; Dan
 Author: Dan Chaltiel [aut, cre] (<https://orcid.org/0000-0003-3488-779X>),
   David Hajage [ccp]
 Maintainer: Dan Chaltiel <dan.chaltiel@gmail.com>
 Repository: CRAN
-Date/Publication: 2023-05-28 23:50:02 UTC
+Date/Publication: 2023-11-12 20:43:19 UTC

@@ -1,5 +1,25 @@
 Crosstables for descriptive analyses. See documentation at <https://danchaltiel.github.io/crosstable/> and browse code at <https://github.com/DanChaltiel/crosstable>.
 
+# crosstable 0.7.0 <sub><sup>2023-11-12</sup></sub>
+
+#### New features
+
+-   New officer helper `body_add_table_section()`, which adds a table (crosstable or flextable) which can be surrounded by a title (level 3 by default), a legend, and/or a short sentence.
+-   `set_label()` now accepts a function as a value (e.g. `set_label(mtcars2, toupper)`).
+-   Argument `format_fixed(scientific)` can now be `FALSE` to force standard format. Can be set through `options(crosstable_scientific_log=FALSE)` (#49).
+-   New argument `format_fixed(epsilon)` to format values as `"<epsilon"`. Can be set through `options(crosstable_format_epsilon=0.001)`.
+-   Markdown implementation has improved, with support of crossing patterns (#26), newline tokens (#30), and many new tags (#51). \
+    You can now use `` body_add_normal("Here is **`some code` in bold & *italic* ** <br> And here is <color:red>red text</color>.") `` \
+    See `?body_add_normal` for more insight.
+
+#### Bug fixes and improvements
+
+-   Reimplement description of columns containing both `NA` (missing values) and "NA" (characters) (#42).
+-   Argument `as_flextable(by_header)` can now be set through `options(crosstable_by_header=FALSE)` to remove all headers.
+-   Argument `body_add_crosstable(header_fontsize)` now defaults to `1.2*body_fontsize`.
+-   Adds an error message in `as_flextable()` when the crosstable is empty (#41).
+-   Fixes a regression where references were not added anymore.
+
 # crosstable 0.6.2 <sub><sup>2023-05-26</sup></sub>
 
 #### Bug fixes and improvements
@@ -54,7 +74,7 @@ Fixes for CRAN checks.
 -   String interpolation works as intended in `body_add_xxx_legend()`.
 -   `crosstable()` will not fail if `fisher.test()` fails [#28]
 -   `forcats::fct_explicit_na()` is not used anymore [#29]
--   `body_add_normal()` now removes ``` symbols when showing code [#31]
+-   `body_add_normal()` now removes \` symbols when showing code [#31]
 -   Trailing commas will not make `apply_labels()` fail anymore [#32]
 -   Performance improvement (around 30% for small tables) as confidence intervals are not calculated anymore when not needed [#34]
 

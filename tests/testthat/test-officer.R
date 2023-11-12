@@ -139,6 +139,28 @@ test_that("crosstables: Triple", {
 })
 
 
+
+# Markdown ------------------------------------------------------------------------------------
+
+
+test_that("Markdown", {
+  x= read_docx() %>%
+    body_add_normal("This is **bold and *italic* (see Table @ref(my_bkm)). ** <br> This is **bold `console \\*CODE\\*` and *bold _and_ italic* **") %>%
+    body_add_normal("This is <color:red>red **bold** text</color>, this is ~subscript *italic*~, and this is ^superscript with <shade:yellow>yellow</shade>^") %>%
+    body_add_normal("This is <ff:Alibi>a fancy font</ff> and this `is code`!!") %>% #you might need to change "Alibi" to "alibi" here
+    body_add_normal("This is *b*") %>%
+    body_add_normal("This is not formatted at all") %>%
+    body_add_normal("This will eventually throw a warning: *italic text without closing") %>%
+    body_add_normal() %>%
+    body_add_table_legend("Some table legend", bookmark="my_bkm") %>%
+    write_and_open()
+
+  # write_and_open(x)
+  expect_true(TRUE)
+})
+
+
+
 # Helpers -----------------------------------------------------------------
 
 test_that("Tests body_add_table_list", {
@@ -240,7 +262,7 @@ test_that("Legend fields", {
   fp = fp_text_lite(bold=FALSE, italic=FALSE, underlined=TRUE, font.size=15)
   fp2 = fp_text_lite(font.size=9)
   doc = read_docx() %>%
-    body_add_normal("As you can see in Table \\@ref(tab1) and in Figure \\@ref(fig1), ",
+    body_add_normal("As you can see in Table \\@ref(tab1) and in Figure @ref(fig1), ",
                     "the iris dataset is about flowers.") %>%
     body_add_table_legend("standard format (table)", bookmark="tab1") %>%
     body_add_figure_legend("standard format (figure)", bookmark="fig1") %>%

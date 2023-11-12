@@ -8,7 +8,9 @@
 #' @param digits number of decimals
 #' @param zero_digits number of significant digits for values rounded to 0 (can be set to NULL to keep the original 0 value)
 #' @param date_format if `x` is a vector of Date or POSIXt, the format to apply (see [strptime] for formats)
+#' @param is_period whether `x` is a period (a numeric value of seconds)
 #' @param percent if TRUE, format the values as percentages
+#' @param epsilon values less than `epsilon` are formatted as `"< [epsilon]"`
 #' @param scientific the power of ten above/under which numbers will be displayed as scientific notation.
 #' @param only_round if TRUE, `format_fixed` simply returns the rounded value. Can be set globally with `options("crosstable_only_round"=TRUE)`.
 #' @param ... unused
@@ -17,6 +19,7 @@
 #' @author Dan Chaltiel
 #' @importFrom checkmate assert assert_logical assert_numeric
 #' @importFrom glue glue
+#' @importFrom rlang check_installed
 #' @export
 #'
 #' @examples
@@ -33,44 +36,59 @@
 #' format_fixed(x_sd, dig=3, zero_digits=2) #override default
 #' options("crosstable_only_round"=NULL)
 #'
-#' x2 = mtcars$mpg/max(mtcars$mpg)
 #' x2 = c(0.01, 0.1001, 0.500005, 0.00000012)
-#' format_fixed(x2, percent=TRUE, dig=6)
+#' format_fixed(x2, scientific=0, dig=1) #everything abs>10^0 gets scientific
+#' #last would be 0 so it is scientific. Try `zero_digits=NA` or `dig=7`
+#' format_fixed(x2, scientific=FALSE, dig=6)
+#' format_fixed(x2, scientific=FALSE, percent=TRUE, dig=0)
+#' format_fixed(x2, scientific=FALSE, eps=0.05)
 format_fixed = function(x, digits=1, zero_digits=1, date_format=NULL,
-                        percent=FALSE,
+                        percent=FALSE, is_period=FALSE,
                         scientific=getOption("crosstable_scientific_log", 4),
+                        epsilon=getOption("crosstable_format_epsilon", NULL),
                         only_round=getOption("crosstable_only_round", FALSE), ...){
   assert_numeric(x)
   assert_numeric(digits)
   assert_logical(percent)
   assert_logical(only_round)
   assert(is.null(zero_digits)||is.na(zero_digits)||is.numeric(zero_digits))
-  scientific = abs(scientific)
-  if(is.date(x)){
-    if(!is.null(date_format))
-      return(format(x, date_format))
-    else
-      return(format(x))
-  } else {
-    format = "f"
-    sci = any(abs(x)>=10^scientific | (x!=0 & abs(x)<=10^-scientific), na.rm=TRUE)
-    if(sci) format = "e"
-    if(percent) x=x*100
-    if(only_round) {
-      if(sci){
-        rtn = sprintf(glue("%.{digits}e"), x)
-      } else {
-        rtn = as.character(round(x, digits))
-      }
-    } else {
-      rtn = ifelse(is.na(x), NA_character_, formatC(x, format=format, digits=digits))
-      if(!is.null(zero_digits) && !is.na(zero_digits)){
-        rtn = ifelse(as.numeric(rtn)==0, as.character(signif(x, digits=zero_digits)), rtn)
-      }
-    }
-    if(percent) rtn=paste0(rtn, "%")
-    return(rtn)
+  assert(is.null(epsilon)||is.numeric(epsilon))
+  if(is_period){
+    check_installed("lubridate", reason="to use `format_fixed(is_period=TRUE)`")
+    d = structure(round(x), class="difftime", units="secs")
+    return(format(lubridate::as.period(d)))
   }
+  if(is.date(x)){
+    if(is.null(date_format)) date_format=""
+    return(format(x, format=date_format))
+  }
+
+  format = "f"
+  if(isFALSE(scientific)) sci = FALSE
+  else sci = any(abs(x)>=10^abs(scientific) | (x!=0 & abs(x)<=10^-abs(scientific)), na.rm=TRUE)
+
+  x_bak = x
+  if(sci) format = "e"
+  if(percent) x=x*100
+  if(only_round) {
+    if(sci){
+      rtn = sprintf(glue("%.{digits}e"), x)
+    } else {
+      rtn = as.character(round(x, digits))
+    }
+  } else {
+    rtn = ifelse(is.na(x), NA_character_, formatC(x, format=format, digits=digits))
+    if(!is.null(zero_digits) && !is.na(zero_digits)){
+      rtn = ifelse(as.numeric(rtn)==0, as.character(signif(x, digits=zero_digits)), rtn)
+    }
+  }
+  if(percent) rtn=paste0(rtn, "%")
+
+  if(!is.null(epsilon) && !is.na(epsilon)){
+    rtn = ifelse(x_bak<epsilon, paste0("<", epsilon), rtn)
+  }
+
+  rtn
 }
 
 
@@ -165,8 +183,9 @@ NULL
 #' @author Dan Chaltiel, David Hajage
 #' @export
 meansd = function(x, na.rm = TRUE, dig = 2, ...) {
+  is_period = !is.null(attr(x, "is_period"))
   moy = mean(x, na.rm=na.rm) %>%
-    format_fixed(digits=dig, ...)
+    format_fixed(digits=dig, is_period=is_period, ...)
   if(is.date(x)){
     if("date_unit" %in% names(list(...)))
       date_unit=list(...)$date_unit
@@ -174,11 +193,11 @@ meansd = function(x, na.rm = TRUE, dig = 2, ...) {
       date_unit="auto"
     std = sd_date(x, date_unit)
     std = std$value %>%
-      format_fixed(digits=dig, ...) %>%
+      format_fixed(digits=dig, is_period=is_period, ...) %>%
       paste(std$unit)
   } else {
     std = sd(x, na.rm=na.rm) %>%
-      format_fixed(digits=dig, ...)
+      format_fixed(digits=dig, is_period=is_period, ...)
   }
   paste0(moy, " (", std, ")")
 }
@@ -198,10 +217,11 @@ moystd=function(...){
 #' @author Dan Chaltiel, David Hajage
 #' @export
 meanCI = function(x, na.rm = TRUE, dig = 2, level=0.95, format=TRUE, ...) {
+  is_period = !is.null(attr(x, "is_period"))
   .mean = mean(x, na.rm=na.rm) %>%
-    format_fixed(digits=dig, ...)
+    format_fixed(digits=dig, is_period=is_period, ...)
   conf = confint_numeric(x, level=level) %>%
-    format_fixed(digits=dig, ...)
+    format_fixed(digits=dig, is_period=is_period, ...)
   if(!format) return(list(mean=.mean, conf_low=conf[1], conf_high=conf[2]))
   paste0(.mean, " [", conf[1], ";", conf[2],  "]")
 }
@@ -217,12 +237,13 @@ meanCI = function(x, na.rm = TRUE, dig = 2, level=0.95, format=TRUE, ...) {
 #' @importFrom stats median quantile
 mediqr = function(x, na.rm = TRUE, dig = 2, format=TRUE, ...) {
   if(is.date(x)) type=1 else type=7
+  is_period = !is.null(attr(x, "is_period"))
   med = x %>%
     median(na.rm=na.rm) %>%
-    format_fixed(digits=dig, ...)
+    format_fixed(digits=dig, is_period=is_period, ...)
   iqr = x %>%
     quantile(probs=c(0.25, 0.75), na.rm=na.rm, type=type) %>%
-    format_fixed(digits=dig, ...)
+    format_fixed(digits=dig, is_period=is_period, ...)
   if(!format) return(list(med=med, iqr_low=iqr[1], iqr_high=iqr[2]))
   paste0(med, " [", iqr[1], ";", iqr[2], "]")
 }
@@ -234,8 +255,9 @@ minmax = function(x, na.rm = TRUE, dig = 2, ...) {
   if(all(is.na(x))){
     mi=ma=NA
   } else {
-    mi = format_fixed(min(x, na.rm = na.rm), digits=dig, ...)
-    ma = format_fixed(max(x, na.rm = na.rm), digits=dig, ...)
+    is_period = !is.null(attr(x, "is_period"))
+    mi = format_fixed(min(x, na.rm = na.rm), digits=dig, is_period=is_period, ...)
+    ma = format_fixed(max(x, na.rm = na.rm), digits=dig, is_period=is_period, ...)
   }
   if(is.date(x)){
     paste(mi, "-", ma)
@@ -290,6 +312,6 @@ na = function(x) {
 #' cross_summary(mtcars2$hp_date)
 #' cross_summary(mtcars2$qsec_posix, date_format="%d/%m %H:%M")
 cross_summary = function(x, dig=1, ...) {
-  return(c("Min / Max" = minmax(x, dig=dig, ...), "Med [IQR]" = mediqr(x, dig=dig, ...),
-           "Mean (std)" = meansd(x, dig=dig, ...), "N (NA)" = nna(x)))
+  c("Min / Max" = minmax(x, dig=dig, ...), "Med [IQR]" = mediqr(x, dig=dig, ...),
+    "Mean (std)" = meansd(x, dig=dig, ...), "N (NA)" = nna(x))
 }

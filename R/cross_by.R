@@ -2,7 +2,7 @@
 #' @importFrom cli cli_abort cli_warn
 #' @importFrom dplyr filter pull
 #' @importFrom glue glue glue_data
-#' @importFrom purrr imap_dfr map_dfr
+#' @importFrom purrr imap list_rbind
 #' @importFrom rlang env
 #' @importFrom stats na.omit
 #' @keywords internal
@@ -22,21 +22,13 @@ cross_by = function(data_x, data_y, funs, funs_arg, percent_pattern, total, perc
     effect = FALSE
   }
 
-  rtn_tbl = imap_dfr(data_x, ~{
-    if(inherits(.x, "difftime")){
-      lab = get_label(.x)
-      .x = as.numeric(.x) %>% set_label(lab)
+  rtn_tbl = imap(data_x, ~{
+    if(is.period(.x)){
+      .x = as.numeric(.x) %>% copy_label_from(.x) %>% structure(is_period=TRUE)
     }
 
     if(anyNA(.x) && "NA" %in% .x) {
-      na_string = as.character(which(.x=="NA"))
-      na_proper = as.character(which(is.na(.x)))
-      cli_warn(c('Cannot describe column "{.y}" as it contains both `NA` (missing values) and "NA" (string)',
-                 i='NA as string{?s} on row{?s}: {na_string}',
-                 i='NA missing value{?s} on row{?s}: {na_proper}'),
-               class = "crosstable_na_char_warning",
-               call = crosstable_caller$env)
-      return(NULL)
+      .x[.x=="NA"] = "\"NA\""
     }
     if(!is.list(.x)){ #TODO is.list pour les erreurs, mieux vaudrait une classe spéciale?
       data_x[.y] = .x
@@ -57,7 +49,7 @@ cross_by = function(data_x, data_y, funs, funs_arg, percent_pattern, total, perc
 
     if(is.list(.x)){
       rtn=NULL
-    } else if(is.numeric.and.not.surv(.x) || is.date(.x)){
+    } else if(is.numeric.and.not.surv(.x) || is.date(.x) || is.period(.x)){
       rtn=cross_numeric(data_x[.y], data_y, funs=funs, funs_arg=funs_arg,
                         showNA=showNA, total=total, label=label,
                         cor_digits=percent_digits, cor_method=cor_method,
@@ -79,10 +71,10 @@ cross_by = function(data_x, data_y, funs, funs_arg, percent_pattern, total, perc
     }
 
     rtn
-  })
+  }) %>% list_rbind()
 
 
-  errors = as.list(errors) %>% map_dfr(identity)
+  errors = as.list(errors) %>% list_rbind()
   if(nrow(errors)>0){
     errors_s = glue_data(errors, "'{name}' ({class})")
     by_col = glue("'{names(data_y[1])}' ({paste_classes(data_y[[1]])})")

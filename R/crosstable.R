@@ -1,4 +1,5 @@
 
+#' @importFrom utils globalVariables
 utils::globalVariables(c(".", "x", "y", "n", "where", "ct", "col_keys",
                          "p_col", ".col_1", ".col_2", "value",
                          ".data", ".env"))
@@ -49,12 +50,12 @@ crosstable_caller = rlang::env()
 #' @export
 #' @importFrom checkmate assert_choice assert_count assert_data_frame assert_list assert_logical assert_multi_class makeAssertCollection reportAssertions
 #' @importFrom cli cli_abort cli_warn
-#' @importFrom dplyr across any_of everything intersect mutate n_distinct pull select where
+#' @importFrom dplyr across any_of cur_column everything intersect mutate n_distinct pull select where
 #' @importFrom forcats fct_na_value_to_level
 #' @importFrom glue glue
 #' @importFrom lifecycle deprecate_stop deprecate_warn deprecated
-#' @importFrom purrr discard imap_dfr map map_chr map_dfc
-#' @importFrom rlang as_function check_dots_unnamed current_env enquo enexpr enexprs is_empty is_formula local_options quo_get_expr
+#' @importFrom purrr map map_chr
+#' @importFrom rlang as_function call_args call_match check_dots_unnamed current_env dots_n enquo is_empty is_formula local_options quo_get_expr
 #' @importFrom stats model.frame na.omit
 #' @importFrom tidyr unite
 #'
@@ -214,17 +215,19 @@ crosstable = function(data, cols=everything(), ..., by=NULL,
   }
 
   # Deprecations --------------------------------------------------------
-  if(!missing(...)){
-    cols_length = length(enexpr(cols))
-    if(cols_length==1) colsCall = as.character(enexpr(cols))
-    else colsCall = enexpr(cols) %>% as.list() %>% map(as.character) %>% discard(~.x=="c") %>% paste(collapse=", ")
-    dotsCall = enexprs(...) %>% as.list() %>% map(as.character) %>% paste(collapse=", ")
-
-    goodcall = c(colsCall, dotsCall) %>% paste(collapse=", ")
-    bad = glue("`crosstable({dataCall}, {colsCall}, {dotsCall}, ...)`")
-    good = glue("`crosstable({dataCall}, c({goodcall}), ...)`")
+  if(!missing(...) && dots_n(...)>0){
+    m=call_match(dots_expand=F)
+    x=call_args(m)
+    colsCall = deparse(x$cols)
+    dotsCall = x$... %>% as.list() %>% map(deparse) %>% unlist()
+    dotsCallp = dotsCall %>% paste(collapse =", ")
+    badcall = paste(deparse(m$cols), dotsCallp, sep=", ")
+    goodcall = c(colsCall, dotsCall) %>% map(call_vars) %>% unlist() %>%
+      unique() %>% paste(collapse =", ")
+    bad = glue("Bad : `crosstable({dataCall}, {badcall}, ...)`")
+    good = glue("Good: `crosstable({dataCall}, c({goodcall}), ...)`")
     deprecate_warn("0.2.0", "crosstable(...=)", "crosstable(cols=)",
-                   details=glue("Instead of {bad}, write {good}"))
+                   details=c(x=bad,v=good))
   }
   if(!missing(.vars)){
     deprecate_stop("0.2.0", "crosstable(.vars=)", "crosstable(cols=)")
@@ -365,7 +368,7 @@ crosstable = function(data, cols=everything(), ..., by=NULL,
   if(ncol_y>1) {
 
     #supported classes
-    data_y2 = map_dfc(data_y, ~{if(!is.logical(.x)&&!is.character.or.factor(.x)) NULL else .x})
+    data_y2 = data_y %>% select(where(~is.logical(.x)||is.character.or.factor(.x)))
     nameclass_diff = setdiff(paste_nameclasses(data_y), paste_nameclasses(data_y2))
     if(length(nameclass_diff)>0){
       message = "Crosstable only supports logical, character or factor `by` columns (multiple)."
@@ -416,11 +419,11 @@ crosstable = function(data, cols=everything(), ..., by=NULL,
   funs = parse_funs(funs)
   if(multiby){
     data_y_lvl = expand.grid(by_levels, stringsAsFactors=FALSE) %>%
-      imap_dfr(~ paste(.y, .x, sep="=")) %>%
-      unite(col="y", sep=" & ") %>% pull()
+      mutate(across(everything(), ~paste(cur_column(), .x, sep="="))) %>%
+      unite("y", sep = " & ") %>% pull()
 
     data_y2 = data_y %>%
-      imap_dfr(~ paste(.y, .x, sep="=")) %>%
+      mutate(across(everything(), ~paste(cur_column(), .x, sep="="))) %>%
       unite(col="y", sep=" & ") %>%
       mutate(y=factor(y, levels=data_y_lvl))
 

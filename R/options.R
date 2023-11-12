@@ -36,6 +36,7 @@
 #' @param compact_padding in flextables, left-padding for non-headers rows when `compact=TRUE`.
 #' @param header_show_n_pattern glue pattern used when showing N in the header of flextables. `.col` is the name of the column and `.n` the size of the group. Default to `{.col} (N={.n})`.
 #' @param keep_id For setting [as_flextable()] arguments globally.
+#' @param by_header For setting [as_flextable()] arguments globally.
 #' @param autofit For setting [as_flextable()] arguments globally.
 #' @param compact For setting [as_flextable()] arguments globally.
 #' @param remove_header_keys For setting [as_flextable()] arguments globally.
@@ -58,11 +59,11 @@
 #' @param normal_squish Should you squish text in normal paragraphs?
 #' @param title_squish Should you squish text in headers paragraphs?
 #' @param allow_break allow crosstable rows to break across pages
-#' @param style_normal For specifying styles used in your {officer} template.
-#' @param style_character For specifying styles used in your {officer} template.
-#' @param style_strong For specifying styles used in your {officer} template.
-#' @param style_image For specifying styles used in your {officer} template.
-#' @param style_legend For specifying styles used in your {officer} template.
+#' @param style_normal For specifying styles used in your `{officer}` template.
+#' @param style_character For specifying styles used in your `{officer}` template.
+#' @param style_strong For specifying styles used in your `{officer}` template.
+#' @param style_image For specifying styles used in your `{officer}` template.
+#' @param style_legend For specifying styles used in your `{officer}` template.
 #' @param style_heading For specifying styles used by headings on different levels. Levels will be pasted in the end (e.g. use `"title"` if your level 2 heading style is `"title2"`).
 #' @param style_list_ordered,style_list_unordered For specifying styles used by lists in the `rdocx` template. Needed for [body_add_list()] to work.
 #' @param scientific_log the maximum power a number can have before being formatted as scientific. Default to 4 so applies on numbers <1e-4 or >1e4.
@@ -89,7 +90,7 @@ crosstable_options = function(
     wrap_id=70,
     compact_padding=25,
     header_show_n_pattern="{.col} (N={.n})",
-    keep_id, autofit, compact, remove_header_keys, show_test_name, padding_v,
+    keep_id, by_header, autofit, compact, remove_header_keys, show_test_name, padding_v,
     header_show_n, fontsize_body, fontsize_subheaders, fontsize_header,
     #officer
     units="in",

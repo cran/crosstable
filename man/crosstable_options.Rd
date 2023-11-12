@@ -32,6 +32,7 @@ crosstable_options(
   compact_padding = 25,
   header_show_n_pattern = "{.col} (N={.n})",
   keep_id,
+  by_header,
   autofit,
   compact,
   remove_header_keys,
@@ -121,6 +122,8 @@ crosstable_options(
 
 \item{keep_id}{For setting \code{\link[=as_flextable]{as_flextable()}} arguments globally.}
 
+\item{by_header}{For setting \code{\link[=as_flextable]{as_flextable()}} arguments globally.}
+
 \item{autofit}{For setting \code{\link[=as_flextable]{as_flextable()}} arguments globally.}
 
 \item{compact}{For setting \code{\link[=as_flextable]{as_flextable()}} arguments globally.}
@@ -161,15 +164,15 @@ crosstable_options(
 
 \item{allow_break}{allow crosstable rows to break across pages}
 
-\item{style_normal}{For specifying styles used in your {officer} template.}
+\item{style_normal}{For specifying styles used in your \code{{officer}} template.}
 
-\item{style_character}{For specifying styles used in your {officer} template.}
+\item{style_character}{For specifying styles used in your \code{{officer}} template.}
 
-\item{style_strong}{For specifying styles used in your {officer} template.}
+\item{style_strong}{For specifying styles used in your \code{{officer}} template.}
 
-\item{style_image}{For specifying styles used in your {officer} template.}
+\item{style_image}{For specifying styles used in your \code{{officer}} template.}
 
-\item{style_legend}{For specifying styles used in your {officer} template.}
+\item{style_legend}{For specifying styles used in your \code{{officer}} template.}
 
 \item{style_heading}{For specifying styles used by headings on different levels. Levels will be pasted in the end (e.g. use \code{"title"} if your level 2 heading style is \code{"title2"}).}
 

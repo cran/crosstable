@@ -17,9 +17,18 @@ test_that("numeric+factor+surv by nothing", {
 })
 
 
+test_that('Contains both `NA` and "NA"', {
+  x=mtcars3
+  x$vs[18:20] = "NA"
+  a=crosstable(x, vs)$variable
+  b=c("\"NA\"", "straight", "vshaped", "NA")
+  expect_identical(a, b)
+})
+
+
 # Crossing difftime -------------------------------------------------------
 
-test_that("difftime is OK: ", {
+test_that("difftime is OK", {
   x1=crosstable(mtcars3, diff)
   expect_equal(dim(x1), c(4,4))
   expect_equal(sum(is.na(x1)), 0)
@@ -29,6 +38,20 @@ test_that("difftime is OK: ", {
   x3=crosstable(mtcars3, diff, by=cyl)
   expect_equal(dim(x3), c(4,7))
   expect_equal(sum(is.na(x3)), 0)
+})
+
+test_that("difftime is OK also", {
+  set.seed(42)
+  x1 = tibble(
+    h = rpois(10, 10), m = rpois(10, 30),
+    hm = lubridate::hm(paste0(h,":",m)),
+    hms = hms::hms(hours=h, minutes=m),
+    hms2 = hms::hms(hours=h*20, minutes=m),
+  )
+  class(x1$hm) #Period
+  class(x1$hms)#hms + difftime
+  ct = crosstable(x1, starts_with("hm"))
+  expect_equal(ct$value[2], "11H 28M 30S [9H 34M 15S;14H 3M 15S]")
 })
 
 
@@ -44,12 +67,6 @@ test_that("Warn: numeric+factor by numeric: ", {
 
 })
 
-test_that('Warn: contains both `NA` and "NA"', {
-  x=mtcars3
-  x$vs[18:20] = "NA"
-  crosstable(x, vs) %>%
-    expect_warning(class='crosstable_na_char_warning')
-})
 
 test_that('Warn: contains only `NA`', {
   crosstable(mtcars3, dummy_na) %>%

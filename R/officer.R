@@ -8,7 +8,7 @@
 #' @param doc a `rdocx` object, created by [officer::read_docx()]
 #' @param x a `crosstable` object
 #' @param body_fontsize fontsize of the body
-#' @param header_fontsize fontsize of the header
+#' @param header_fontsize fontsize of the header. Defaults to `1.2*body_fontsize`.
 #' @param padding_v vertical padding of all table rows
 #' @param allow_break allow crosstable rows to break across pages
 #' @param max_cols max number of columns for `x`
@@ -43,7 +43,7 @@ body_add_crosstable = function (doc, x, body_fontsize=NULL,
 
   if(missing(padding_v)) padding_v = getOption("crosstable_padding_v", NULL)
   if(missing(body_fontsize)) body_fontsize = getOption("crosstable_fontsize_body", NULL)
-  if(missing(header_fontsize)) header_fontsize = getOption("crosstable_fontsize_header", NULL)
+  if(missing(header_fontsize)) header_fontsize = getOption("crosstable_fontsize_header", ceiling(body_fontsize*1.2))
   if(missing(allow_break)) allow_break = getOption("crosstable_allow_break", TRUE)
   if(missing(max_cols)) max_cols = getOption("crosstable_add_max_cols", 25)
 
@@ -53,11 +53,11 @@ body_add_crosstable = function (doc, x, body_fontsize=NULL,
               class="crosstable_body_add_large_error")
   }
   ft = as_flextable(x, ...)
-  if(length(body_fontsize)!=0)
+  if(length(body_fontsize)>0)
     ft = fontsize(ft, size = body_fontsize, part = "body")
-  if(length(header_fontsize)!=0)
+  if(length(header_fontsize)>0)
     ft = fontsize(ft, size = header_fontsize, part = "header")
-  if(length(padding_v)!=0)
+  if(length(padding_v)>0)
     ft = padding(ft, padding.top=padding_v, padding.bottom=padding_v, part = "body")
 
   body_add_flextable(doc, ft, keepnext=!allow_break)
@@ -74,7 +74,7 @@ body_add_crosstable = function (doc, x, body_fontsize=NULL,
 #' Add a new paragraph in an `officer` document with default style.\cr
 #' Variables can be inserted in the text as multiple strings (`paste()` style) or enclosed by braces (`glue()` style).  \cr
 #' Basic markdown syntax is available: `**bold**`, `*italic*`, and `_underlined_`. \cr
-#' References to any bookmark can be inserted using the syntax `\\@ref(bookmark)`.
+#' References to any bookmark can be inserted using the syntax `@ref(bookmark)` and newlines can be inserted using the token `<br>`.
 #'
 #' @param doc the doc object (created with the `read_docx` function of `officer` package)
 #' @param ... one or several character strings, pasted using `.sep`. As with `glue::glue()`, expressions enclosed by braces will be evaluated as R code. If more than one variable is passed, all should be of length 1.
@@ -82,6 +82,23 @@ body_add_crosstable = function (doc, x, body_fontsize=NULL,
 #' @param .sep Separator used to separate elements.
 #' @param squish Whether to squish the result (remove trailing and repeated spaces). Default to `TRUE`. Allows to add multiline paragraph without breaking the string.
 #' @param parse which format to parse. Default to all formats (`c("ref", "format", "code")`).
+#'
+#' @section Markdown support:
+#' In all `crosstable` helpers for `officer`, you can use the following Markdown syntax to format your text:
+#'
+#'  - *bold*: `"**text in bold**"`
+#'  - *italics: `"*text in italics*"`
+#'  - *subscript*: `"Text in ~subscript~"`
+#'  - *superscript*: `"Text in ^superscript^"`
+#'  - *newline*: `Before <br> After`
+#'  - *color*: `"<color:red>red text</color>"`
+#'  - *shade*: `"<shade:yellow>yellow text</shade>"` (background color)
+#'  - *font family*: `"<ff:symbol>symbol</ff>"` (
+#'
+#' Note that the font name depends on your system language. For instant, in French, it would be `Symbol` with an uppercase first letter.
+#'
+#' See the last example of [body_add_normal()] for a practical case.
+#'
 #'
 #' @return a new doc object
 #'
@@ -113,6 +130,18 @@ body_add_crosstable = function (doc, x, body_fontsize=NULL,
 #'                      legend.") %>%
 #'     body_add_table_legend("My pretty table", bookmark="my_table")
 #' write_and_open(doc)
+#'
+#' #Markdown support
+#' read_docx() %>%
+#'   body_add_normal("This is **bold and *italic* (see Table @ref(my_bkm)). ** <br> This is
+#'                    **bold `console \\*CODE\\*` and *bold _and_ italic* **") %>%
+#'   body_add_normal("This is <color:red>red **bold** text</color>, this is ~subscript *italic*~,
+#'                    and this is ^superscript with <shade:yellow>yellow</shade>^") %>%
+#'   body_add_normal("This is <ff:Alibi>a fancy font</ff> and this `is code`!!") %>%
+#'               #you might need to change "Alibi" to "alibi" here
+#'   body_add_normal() %>%
+#'   body_add_table_legend("Some table legend", bookmark="my_bkm") %>%
+#'   write_and_open()
 body_add_normal = function(doc, ..., .sep="", style=NULL, squish=TRUE, parse=c("ref", "format", "code")) {
   if(missing(squish)) squish = getOption("crosstable_normal_squish", TRUE)
   dots = list(...)
@@ -148,12 +177,14 @@ body_add_normal = function(doc, ..., .sep="", style=NULL, squish=TRUE, parse=c("
 #' Add a title to an `officer` document
 #'
 #' @param doc the doc object (created with the \code{read_docx} function of \code{officer} package)
-#' @param value a character string
+#' @param value a character string. See Section below for markdown support.
 #' @param level the level of the title. See \code{styles_info(doc)} to know the possibilities.
 #' @param squish Whether to squish the result (remove trailing and repeated spaces). Default to `TRUE`.
 #' @param style the name of the title style. See \code{styles_info(doc)} to know the possibilities.
 #'
 #' @return The docx object `doc`
+#'
+#' @inheritSection body_add_normal Markdown support
 #'
 #' @author Dan Chaltiel
 #' @export
@@ -176,7 +207,6 @@ body_add_title = function(doc, value, level=1, squish=TRUE,
   value = glue(value, .envir = parent.frame())
   if(squish) value = str_squish(value)
   style = paste(style, level)
-  # body_add_par(doc, value, style = style)
   body_add_parsed(doc, value, style = style)
 }
 
@@ -184,8 +214,8 @@ body_add_title = function(doc, value, level=1, squish=TRUE,
 #' Add a list to an `officer` document
 #'
 #' @param doc a docx object
-#' @param value a character (`body_add_list()`) or a string (`body_add_list_item`)
-#' @param ordered if TRUE, adds an ordered list, if FALSE, adds a bullet list
+#' @param value a character vector (`body_add_list()`) or scalar (`body_add_list_item`). See Section below for markdown support.
+#' @param ordered if `TRUE`, adds an ordered list, if `FALSE` (default), adds a bullet list
 #' @param style specify the style manually, overriding `ordered`. A better way is to set options `crosstable_style_list_ordered` and `crosstable_style_list_unordered` globally.
 #' @param ... passed on to [officer::body_add_par()]
 #'
@@ -193,6 +223,7 @@ body_add_title = function(doc, value, level=1, squish=TRUE,
 #'
 #' @details Ordered lists and bullet lists are not supported by the default officer template (see [https://github.com/davidgohel/officer/issues/262](#262)). You have to manually set custom styles matching those list in a custom Word template file. Then, you can use either the `style` argument or crosstable options. See examples for more details.
 #'
+#' @inheritSection body_add_normal Markdown support
 #' @export
 #'
 #' @examples
@@ -377,13 +408,66 @@ body_add_crosstable_list = function(...){
   body_add_table_list(...)
 }
 
+#' Add a section with a table and its legend
+#'
+#' @param doc a `rdocx` object
+#' @param x a table: `crosstable`, `flextable`, or plain old `dataframe`
+#' @param legend the legend to use
+#' @param bookmark the bookmark to use. Defaults to the cleaned variable name of `x`
+#' @param title the title to add for the section. Can also be `FALSE` (no title) or `TRUE` (the title defaults to `legend`)
+#' @param title_lvl the title level if applicable
+#' @param sentence a sentence to add between the title (if applicable) and the table. If `TRUE`, defaults to `"Information about {tolower(title)} is described in Table @ref({bookmark})"`.
+#' @param ... passed on to [body_add_flextable()] or [body_add_crosstable()]
+#'
+#' @return The `docx` object `doc`
+#' @importFrom flextable body_add_flextable qflextable
+#' @export
+#'
+#' @examples
+#' library(officer)
+#' read_docx() %>%
+#'   body_add_title("Description", 1) %>%
+#'   body_add_title("Population A", 2) %>%
+#'   body_add_table_section(head(iris), "The iris dataset", sentence=TRUE) %>%
+#'   body_add_table_section(crosstable(iris), "A crosstable of the iris dataset",
+#'                          title=FALSE, sentence=TRUE, body_fontsize=8) %>%
+#'   write_and_open()
+body_add_table_section = function(doc, x, legend, ..., bookmark=NULL,
+                                  title=getOption("crosstable_section_title", TRUE),
+                                  title_lvl=getOption("crosstable_section_title_level", 3),
+                                  sentence=getOption("crosstable_section_sentence", FALSE)){
+  stopifnot(!is.null(x))
+  stopifnot(inherits(x, c("data.frame", "flextable", "crosstable")))
+  ctname = rlang::caller_arg(x)
+  if(is.null(bookmark)) bookmark = crosstable_clean_names(ctname)
+
+  if(!is.null(title) && !isFALSE(title)){
+    if(isTRUE(title)) title = legend
+    doc = body_add_title(doc, title, title_lvl)
+  }
+  if(isTRUE(sentence)){
+    if(isTRUE(title) || isFALSE(title)) title = legend
+    doc = body_add_normal(doc, "Information about {tolower(title)} is described in Table @ref({bookmark}).")
+  } else if(!is.null(sentence) & !isFALSE(sentence)) {
+    doc = body_add_normal(doc, sentence)
+  }
+  if(inherits(x, "crosstable")){
+    doc = body_add_crosstable(doc, x, ...)
+  } else {
+    if(!inherits(x, "flextable")) x = qflextable(x)
+    doc = body_add_flextable(doc, x, ...)
+  }
+  doc = body_add_table_legend(doc, legend=legend, bookmark=bookmark)
+  doc
+}
+
 
 #' Add a legend to a table or a figure
 #'
 #' Add a legend to a table or a figure in an `officer` document. Legends can be referred to using the `@ref` syntax in [body_add_normal()] (see examples for some use cases). Table legends should be inserted before the table while figure legends should be inserted after the figure.
 #'
 #' @param doc a docx object
-#' @param legend the table legend. As with [glue::glue()], expressions enclosed by braces will be evaluated as R code.
+#' @param legend the table legend. Supports `glue` syntax and markdown syntax (see Section below).
 #' @param bookmark the id of the bookmark. This is the id that should then be called in [body_add_normal()] using the `"\\@ref(id)"` syntax. Forbidden characters will be removed.
 #' @param legend_prefix a prefix that comes before the legend, after the numbering
 #' @param legend_style style of of the whole legend. May depend on the docx template. However, if `name_format` is provided with a specific `font.size`, this size will apply to the whole legend for consistency.
@@ -397,6 +481,8 @@ body_add_crosstable_list = function(...){
 #'
 #' @return The docx object `doc`
 #'
+#' @inheritSection body_add_normal Markdown support
+#'
 #' @section Warning:
 #' Be aware that you unfortunately cannot reference a bookmark more than once using this method. Writing: \cr `body_add_normal("Table \\@ref(iris_col1) is about flowers. I really like Table \\@ref(iris_col1).")`\cr
 #' will prevent the numbering from applying.
@@ -404,6 +490,8 @@ body_add_crosstable_list = function(...){
 #' During the opening of the document, MS Word might ask you to "update the fields", to which you should answer "Yes".  \cr
 #' If it is not asked or if you answer "No", the legends added with [body_add_table_legend()] or [body_add_figure_legend()] might have no actual numbers displayed. \cr
 #' In this case, you have to manually update the references in MS Word: select all (\kbd{Ctrl}+\kbd{A}), then update (\kbd{F9}), sometimes twice. More info on [https://ardata-fr.github.io/officeverse/faq.html#update-fields](https://ardata-fr.github.io/officeverse/faq.html#update-fields).
+#'
+#'
 #' @rdname body_add_legend
 #' @name body_add_legend
 #' @author Dan Chaltiel
@@ -514,17 +602,16 @@ body_add_legend = function(doc, legend, legend_name, bookmark,
 
   bkm = run_word_field(seqfield, prop=name_format)
   if(!is.null(bookmark)){
-    # browser()
     bookmark = crosstable_clean_names(bookmark)
     bkm = run_bookmark(bookmark, bkm)
   }
 
-  legend_fpar = fpar(
-    ftext(legend_name, name_format),
-    bkm,
-    ftext(": ", name_format),
-    ftext(legend, fp_size)
-  )
+  legend_fpar = do.call(fpar, args=c(
+    list(ftext(legend_name, name_format),
+         bkm,
+         ftext(": ", name_format)),
+    parse_md(legend, return_list=TRUE)
+  ))
 
   body_add_fpar(doc, legend_fpar, style=legend_style)
 }
@@ -585,8 +672,7 @@ body_add_img2 = function(doc, src, width, height,
 #' @examples
 #' library(officer)
 #' library(ggplot2)
-#' p = ggplot(data = iris ) +
-#'  geom_point(mapping = aes(Sepal.Length, Petal.Length))
+#' p = ggplot(data=iris, aes(Sepal.Length, Petal.Length)) + geom_point()
 #' crosstable_options(
 #'   units="cm",
 #'   style_image="centered"
@@ -807,82 +893,137 @@ generate_autofit_macro = function(){
 
 #' Parse value for multiple regexp to unravel formats (bold, italic and underline) and reference calls.
 #'
-#' @importFrom glue glue
-#' @importFrom officer body_add_fpar body_add_par fp_text_lite ftext run_word_field
-#' @importFrom purrr discard map map_lgl
-#' @importFrom rlang set_names
-#' @importFrom stringr str_detect str_extract_all str_match str_split
+#' @importFrom officer body_add_par body_add_fpar
 #'
 #' @keywords internal
 #' @noRd
-body_add_parsed = function(doc, value, style, parse_ref=TRUE, parse_format=TRUE, parse_code=TRUE){
-  if(isFALSE(parse_ref) && isFALSE(parse_format) && isFALSE(parse_code)){
-    return(body_add_par(doc, value, style))
-  }
-  reg_r = list(
-    ref = "\\?\\?@ref\\(.*?\\)"
-  )
-  reg_f = list(
-    bold = "\\*\\*(.+?)\\*\\*",
-    underlined = "_(.+?)_",
-    italic = "(?<!\\*)\\*(?!\\*)(.+?)(?<!\\*)\\*(?!\\*)"
-  )
-  reg_c = list(
-    code = "`(.+?)`"
-  )
-  #TODO officer::run_linebreak()
-  if(isFALSE(parse_ref)) reg_r = list()
-  if(isFALSE(parse_format)) reg_f = list()
-  if(isFALSE(parse_code)) reg_c = list()
-  reg = c(reg_f, reg_r, reg_c)
-  rex_all = paste(reg, collapse="|")
-
-  if(!str_detect(value, rex_all)){
-    return(body_add_par(doc, value, style))
-  }
-
-
-  par_not_format = str_split(value, rex_all)[[1]]
-  par_format = str_extract_all(value, rex_all)[[1]]
-
-  # #altern: https://stackoverflow.com/a/43876294/3888000
-  altern = c(par_not_format, par_format)[order(c(seq_along(par_not_format)*2 - 1,
-                                                 seq_along(par_format)*2))]
-  par_list = map(altern, ~{
-    .format = map_lgl(reg, function(pat) str_detect(.x, pattern=pat)) %>%
-      discard(isFALSE) %>% names()
-
-    if(length(.format)==0) return(ftext(.x))
-
-    if(any(.format=="ref")){
-      bkm = str_match(.x, "\\?\\?@ref\\((.*?)\\)")[,2]
-      return(run_word_field(glue(' REF {bkm} \\h ')))
-    }
-    if(any(.format=="code")){
-      fp = fp_text_lite(font.family=getOption("crosstable_font_code", "Consolas"))
-      .x = str_match(.x, reg$code)[[2]]
-      return(ftext(.x, fp))
-    }
-    rex = reg[.format]
-    for(i in rex){
-      if(str_detect(.x, i)){
-        .x = str_match(.x, i)[[2]]
-      }
-    }
-
-    fp_args = rep(TRUE, length(.format)) %>% set_names(.format) %>% as.list()
-    print("fp_args")
-    print(fp_args)
-    fp = do.call(fp_text_lite, fp_args)
-
-    ftext(.x, fp)
-  })
-
-  p=do.call(fpar, args=par_list)
-  body_add_fpar(doc, p, style)
+body_add_parsed = function(doc, value, style, parse_ref=TRUE, parse_format=TRUE,
+                           parse_code=TRUE, parse_newline=TRUE, ...){
+  p = parse_md(value, parse_ref, parse_format, parse_code)
+  body_add_fpar(doc, p, style, ...)
 }
 
+utils::globalVariables(c("do", "end", "start"))
 
+#' Compile Markdown to `officer` formatted paragraph
+#' @return a `fpar`
+#' @importFrom dplyr arrange bind_rows case_when everything group_split lag lead mutate mutate_all select
+#' @importFrom glue glue
+#' @importFrom officer fp_text_lite ftext run_linebreak run_word_field
+#' @importFrom purrr accumulate
+#' @importFrom stringr fixed str_extract str_locate_all str_replace_all
+#' @importFrom tibble as_tibble tibble
+#' @importFrom tidyr fill replace_na unpack
+#' @importFrom utils head
+#' @keywords internal
+#' @noRd
+parse_md = function(x, parse_ref=TRUE, parse_format=TRUE, parse_code=TRUE, parse_newline=TRUE,
+                    return_list=FALSE){
+  if(nchar(x)==0) return(fpar(x))
+
+  x = str_replace_all(x, fixed("**"), fixed("%%")) #better separates bold from italic
+
+  f = \(x, k, f) str_locate_all(x, k)[[1]] %>% as_tibble() %>% mutate(format=f)
+  bolds = f(x, "(?<!\\\\)%%", "bold")
+  italics = f(x, "(?<!\\\\)\\*", "italic")
+  underlined = f(x, "(?<!\\\\)_", "underlined")
+  code = f(x, "(?<!\\\\)`", "code")
+  subscript = f(x, "(?<!\\\\)~", "subscript")
+  superscript = f(x, "(?<!\\\\)\\^", "superscript")
+  ref = f(x, "\\\\?\\\\?@ref\\((.*?)\\)", "ref")
+  newline = f(x, "<br> *", "newline")
+  #TODO warning si TOKEN non refermé ?
+
+  color = f(x, "<color:\\S+?>|</color>", "color")
+  font = f(x, "<ff:\\S+?>|</ff>", "font")
+  shade = f(x, "<shade:\\S+?>|</shade>", "shade")
+
+  rtn = tibble()
+  if(parse_ref)     rtn = bind_rows(rtn, ref)
+  if(parse_format)  rtn = bind_rows(rtn, bolds, italics, underlined, color,
+                                    shade, font, subscript, superscript)
+  if(parse_code)    rtn = bind_rows(rtn, code)
+  if(parse_newline) rtn = bind_rows(rtn, newline)
+  if(nrow(rtn)==0) return(fpar(x))
+
+  #remove tokens inside refs
+  reflines = rtn %>% filter(format=="ref") %>% select(-format) %>%
+    group_split(row_number(), .keep = FALSE)
+  for(i in reflines){
+    rtn = rtn %>% filter(! (start>i$start & end<i$end))
+  }
+
+
+  state0 = tibble(bold=0, italic=0, underlined=0, code=0, ref=0, newline=0,
+                  color=0, subscript=0, superscript=0, font=0, shade=0)
+  get_state = function(state, x){
+    if(is.na(x)) return(NA)
+    state[[x]] = 1-state[[x]]
+    state
+  }
+  rtn = rtn %>%
+    arrange(start) %>%
+    mutate(
+      do = purrr::accumulate(lead(format), .init=get_state(state0, format[1]),
+                             ~get_state(.x, .y)) %>%
+        head(-1) %>%
+        mutate_all(~{
+          lag_x = lag(.x, default=0)
+          case_when(
+            lag_x==0 & .x==1 ~ TRUE,
+            lag_x==1 & .x==0 ~ FALSE,
+            .default=NA
+          )
+        }) %>%
+        mutate(color2 = 1,)
+    ) %>%
+    unpack(do) %>%
+    mutate(
+      txt = substring(x, start, end),
+      color=ifelse(color, str_extract(txt, "<color:(\\S+?)>", group=1), "no"),
+      shade=ifelse(shade, str_extract(txt, "<shade:(\\S+?)>", group=1), "no"),
+      font =ifelse(font,  str_extract(txt, "<ff:(\\S+?)>", group=1), "no"),
+    ) %>%
+    fill(everything()) %>%
+    mutate(
+      across(-c(color, shade, font), ~replace_na(.x, FALSE)),
+      across(c(color, shade, font), ~na_if(as.character(.x), "no")),
+      font = ifelse(code, getOption("crosstable_font_code", "Consolas"), font),
+      valign = case_when(subscript ~ "subscript", superscript ~ "superscript",
+                         .default="baseline")
+    ) %>%
+    select(-ref)
+
+  p = list()
+  p[[1]] = ftext(substring(x, 1, rtn$start[1]-1))
+  for(i in seq(nrow(rtn))){
+    d = as.list(rtn[i, ])
+    if(!is.na(d$shade)){ #bug in fp_text_lite(), see officer/#538
+      if(!is.na(d$color)) cli_warn("Shade can only be added to default black text.")
+      d$color = "black"
+    }
+
+    fmt = fp_text_lite(bold=d$bold, italic=d$italic, underlined=d$underlined, color=d$color,
+                       shading.color=d$shade, font.family=d$font, vertical.align=d$valign)
+    next_start = rtn[i+1, ][["start"]]-1
+
+    if(d$format=="ref"){
+      bkm = substring(x, d$start, d$end) %>%
+        str_extract("\\\\?\\\\?@ref\\((.*?)\\)", group=1)
+      p[[length(p)+1]] = run_word_field(glue(' REF {bkm} \\h '), prop=fmt)
+    } else if(d$format=="newline"){
+      p[[length(p)+1]] = run_linebreak()
+    }
+
+    if(is.na(next_start)) next_start=nchar(x)
+    txt = substring(x, d$end+1, next_start)
+    txt = txt %>% str_replace_all("\\\\([*`%])", "\\1") #delete escapings
+    p[[length(p)+1]] = ftext(txt, prop=fmt)
+  }
+
+  if(return_list) return(p)
+  do.call(fpar, args=p)
+}
 
 
 # Deprecated --------------------------------------------------------------
