@@ -106,6 +106,6 @@ library(flextable)
 crosstable(mtcars2, c(vs, qsec), by=am, funs=mean, test=TRUE) %>% 
   as_flextable(keep_id=TRUE)
 
-## ---- include = FALSE---------------------------------------------------------
+## ----include = FALSE------------------------------------------------------------------------------
 options(old)
 

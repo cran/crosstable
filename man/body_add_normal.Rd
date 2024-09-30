@@ -11,6 +11,8 @@ body_add_normal(
   .sep = "",
   style = NULL,
   squish = TRUE,
+  font_size = NA,
+  envir = parent.frame(),
   parse = c("ref", "format", "code")
 )
 }
@@ -24,6 +26,10 @@ body_add_normal(
 \item{style}{Style for normal text. Best set with \code{\link[=crosstable_options]{crosstable_options()}}.}
 
 \item{squish}{Whether to squish the result (remove trailing and repeated spaces). Default to \code{TRUE}. Allows to add multiline paragraph without breaking the string.}
+
+\item{font_size}{Font size.}
+
+\item{envir}{Environment to evaluate each expression in \code{glue()}.}
 
 \item{parse}{which format to parse. Default to all formats (\code{c("ref", "format", "code")}).}
 }

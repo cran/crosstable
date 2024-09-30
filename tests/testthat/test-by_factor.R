@@ -215,6 +215,36 @@ test_that("Unique numeric", {
 })
 
 
+# droplevels ---------------------------------------------------------
+
+test_that("drop_levels works", {
+  a = mtcars2 %>%
+    mutate(am=forcats::fct_expand(am, "other"))
+
+  #No by
+  a %>% crosstable(am, drop_levels=FALSE) %>% pull(variable) %>%
+    expect_equal(c("auto", "manual", "other"))
+  a %>% crosstable(am, drop_levels=TRUE) %>% pull(variable) %>%
+    expect_equal(c("auto", "manual"))
+
+  #Single by
+  a %>% crosstable(mpg, by=am, drop_levels=FALSE) %>%
+    expect_named(c(".id", "label", "variable", "auto", "manual", "other"))
+  a %>% crosstable(mpg, by=am, drop_levels=TRUE) %>%
+    expect_named(c(".id", "label", "variable", "auto", "manual"))
+
+  #Multi by
+  a %>% crosstable(cyl, by=c(am, vs), drop_levels=TRUE) %>%
+    expect_named(c(".id", "label", "variable",
+                   "am=auto & vs=straight", "am=manual & vs=straight",
+                   "am=auto & vs=vshaped", "am=manual & vs=vshaped"))
+  a %>% crosstable(cyl, by=c(am, vs), drop_levels=FALSE) %>%
+    expect_named(c(".id", "label", "variable",
+                   "am=auto & vs=straight", "am=manual & vs=straight",
+                   "am=other & vs=straight", "am=auto & vs=vshaped",
+                   "am=manual & vs=vshaped", "am=other & vs=vshaped"))
+})
+
 # By dummy ---------------------------------------------------------
 
 test_that("By dummy", {
@@ -266,13 +296,25 @@ test_that("By multiple (formula)", {
 
 
 test_that("By multiple warnings", {
+  #`by` columns have the wrong classes
   x1 = crosstable(mtcars3, c(mpg, gear, cyl), by=c(am, diff, qsec_posix, hp_date)) %>%
     expect_warning2(class="crosstable_multiby_wrong_class_warning")
   attr(x1, "obj") %>% dim() %>% expect_equal(c(11,5))
 
+  #Some `by` columns have missing values only
   x2 = crosstable(mtcars3, c(mpg, gear, cyl), by=c(am, dummy_na, dummy_na2)) %>%
     expect_warning2(class="crosstable_all_na_by_warning")
   attr(x2, "obj") %>% dim() %>% expect_equal(c(11,5))
+
+  #Some `by` columns have blank values only
+  mtcars3 %>%
+    mutate(dummy_na2="") %>%
+    crosstable(c(mpg, gear, cyl), by=c(dummy_na2)) %>%
+    expect_warning2(class="crosstable_all_na_by_warning")
+
+  #All `by` columns have missing values only
+  crosstable(mtcars3, c(mpg, gear, cyl), by=c(dummy_na, dummy_na2)) %>%
+    expect_warning(class="crosstable_all_na_by_warning")
 
   crosstable(mtcars3, c(mpg, gear, cyl), by=c(am, vs), test=TRUE) %>%
     expect_warning(class="crosstable_multiby_test_warning")
@@ -285,10 +327,6 @@ test_that("By multiple errors", {
   crosstable(mtcars3, c(mpg, gear, disp, carb, am),
              by=c(hp, surv, diff, qsec_posix, hp_date)) %>%
     expect_error(class="crosstable_multiby_wrong_class_error")
-
-  #All `by` columns have missing values only
-  crosstable(mtcars3, c(mpg, gear, cyl), by=c(dummy_na, dummy_na2)) %>%
-    expect_warning(class="crosstable_all_na_by_warning")
 })
 
 

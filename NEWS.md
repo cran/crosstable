@@ -1,10 +1,35 @@
 Crosstables for descriptive analyses. See documentation at <https://danchaltiel.github.io/crosstable/> and browse code at <https://github.com/DanChaltiel/crosstable>.
 
+# crosstable 0.7.1 (development version)
+
+#### New features
+
+-   Remove percents when N=0 with `crosstable(remove_zero_percent=TRUE)` (#78).
+-   Better header for multi-by flextables `as_flextable(ct, remove_header_keys=TRUE)` (#74).
+-   Control font size with `body_add_normal(font_size)` and `crosstable_options(normal_font_size)` (#65).
+-   Option control on height & width in `body_add_gg2()` (#68).
+
+#### Bug fixes and improvements
+ 
+-   Add envir argument to functions that call `glue()` (#83).
+-   Better error when `x` is `NULL` in `body_add_table_section()` (#82).
+-   Warn if `by` is "" (#77).
+-   Default to quiet warnings if columns are missing (#76).
+-   Moved the legend above the table in `body_add_table_section()` (#73).
+-   Fixed `get_label()` on named vector columns (#72).
+-   Fixed `crosstable(drop_levels)` (#69, #70, #71).
+-   Flextable autofit now uses the recommended method (#62).
+-   `transpose()` will work on multi-by crosstables (#60).
+-   Fixed a bug happening when NA is already a level (#59).
+-   Fixed error where `by` contains "label" (#56).
+-   Fixed `as_flextable(header_show_n)` not working in single `by` (#54).
+-   Fixed some missing options in `crosstable_options()` and added tests (#53).
+
 # crosstable 0.7.0 <sub><sup>2023-11-12</sup></sub>
 
 #### New features
 
--   New officer helper `body_add_table_section()`, which adds a table (crosstable or flextable) which can be surrounded by a title (level 3 by default), a legend, and/or a short sentence.
+-   New officer helper `body_add_table_section()` that adds a table (crosstable or flextable) which can be surrounded by a title (level 3 by default), a legend, and/or a short sentence.
 -   `set_label()` now accepts a function as a value (e.g. `set_label(mtcars2, toupper)`).
 -   Argument `format_fixed(scientific)` can now be `FALSE` to force standard format. Can be set through `options(crosstable_scientific_log=FALSE)` (#49).
 -   New argument `format_fixed(epsilon)` to format values as `"<epsilon"`. Can be set through `options(crosstable_format_epsilon=0.001)`.

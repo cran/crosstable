@@ -1,4 +1,4 @@
-## ---- include = FALSE-----------------------------------------------------------------------------
+## ----include = FALSE------------------------------------------------------------------------------
 knitr::opts_chunk$set(
 collapse = TRUE,
 comment = "#>",
@@ -65,6 +65,6 @@ crosstable(mtcars2, sqrt(mpg) + I(qsec^2) ~ ifelse(mpg>20,"mpg>20","mpg<20"),
 crosstable(mtcars2, c(where(is.numeric), -matches("^d|w"), drat), label=FALSE) %>% 
   as_flextable()
 
-## ---- include = FALSE---------------------------------------------------------
+## ----include = FALSE------------------------------------------------------------------------------
 options(old)
 

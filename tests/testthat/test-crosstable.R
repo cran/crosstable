@@ -18,13 +18,34 @@ test_that("numeric+factor+surv by nothing", {
 
 
 test_that('Contains both `NA` and "NA"', {
-  x=mtcars3
-  x$vs[18:20] = "NA"
-  a=crosstable(x, vs)$variable
-  b=c("\"NA\"", "straight", "vshaped", "NA")
-  expect_identical(a, b)
+  # "'NA'" is overkill to test
+  x = data.frame(a = as_factor(c("zzz", "zzz", "NA", "NA", NA, NA, "aaa", "aaa")),
+                 b = rep(1:2, 4))
+  x$a %>% levels
+
+  crosstable(x, a) %>%
+    pull(variable) %>%
+    expect_identical(c("zzz", "aaa", "\"NA\"", "NA"))
+
+  crosstable(x, a, by=b) %>%
+    pull(variable) %>%
+    expect_identical(c("zzz", "aaa", "\"NA\"", "NA"))
 })
 
+
+# Arguments -----------------------------------------------------------------------------------
+
+
+test_that('`remove_zero_percent` works', {
+  crosstable_options(remove_zero_percent=TRUE, .local=TRUE)
+  a = crosstable(mtcars2, cyl, by=vs)
+  expect_true(any(a=="0"))
+  crosstable_options(remove_zero_percent=FALSE, .local=TRUE)
+  a = crosstable(mtcars2, cyl, by=vs)
+  expect_false(any(a=="0"))
+  a = crosstable(mtcars2, cyl, by=vs, remove_zero_percent=TRUE)
+  expect_true(any(a=="0"))
+})
 
 # Crossing difftime -------------------------------------------------------
 

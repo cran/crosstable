@@ -28,7 +28,7 @@ doc = read_docx() %>% #default template
   body_add_title("Dataset iris (nrow={nrow(iris)})", 1) %>%
   body_add_title("Not compacted", 2) %>%
   body_add_normal("Table \\@ref(table_autotest) is an example. However, automatic 
-                  testing is bad and I should feel bad.") %>%
+                  testing is **bad** and I should feel **bad**.") %>%
   body_add_crosstable(ct1) %>%
   body_add_table_legend("Automatic testing is bad", bookmark="table_autotest") %>%
   body_add_normal() %>%  
@@ -59,7 +59,4 @@ if(file.exists("../examples")){
 
 ## ----print, eval=FALSE----------------------------------------------------------------------------
 #  write_and_open(doc, "vignette_officer.docx")
-
-## ---- include = FALSE---------------------------------------------------------
-options(old)
 

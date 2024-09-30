@@ -5,6 +5,25 @@ ct <- crosstable(t, cols=c('x'))
 gt <- as_gt(ct, generic_labels=list(value="count"))
 
 
+test_that("No missing options", {
+  skip_on_ci()
+  skip_on_cran()
+  path = test_path("../../R")
+  skip_if(!dir.exists(path))
+
+  ignored = c(
+    "rec_sep", "rec_max_length", #internal, unused yet
+    "crosstable_...", "crosstable_.local", "crosstable_reset"
+  )
+
+  missing_options = missing_options_helper(path=path, ignore=ignored)
+
+  #missing options, not handled in crosstable_options()
+  missing_options$not_handled %>% expect_length(0)
+  # added options, handled in crosstable_options() but never used in the code
+  missing_options$not_used %>% expect_length(0)
+})
+
 
 test_that("Options work", {
   local({
@@ -13,7 +32,7 @@ test_that("Options work", {
     expect_length(x, 0)
 
     #normal func
-    crosstable_options(zero_percent=TRUE)
+    crosstable_options(remove_zero_percent=TRUE)
     #legacy
     crosstable_options(crosstable_wrap_id=50)
     #duplicates
@@ -25,7 +44,7 @@ test_that("Options work", {
                    class="crosstable_unknown_option_warning")
 
     x=crosstable_peek_options()
-    expect_mapequal(x, list(crosstable_zero_percent = TRUE, crosstable_wrap_id=50,
+    expect_mapequal(x, list(crosstable_remove_zero_percent = TRUE, crosstable_wrap_id=50,
                             crosstable_units = "cm", crosstable_percent_pattern = "{n}"))
 
     #reset
@@ -40,6 +59,14 @@ test_that("Options work", {
 })
 
 
+test_that("Renaming work", {
+  #zero_percent was renamed to remove_zero_percent
+  crosstable_options(zero_percent=TRUE, .local=TRUE)
+  a=crosstable_peek_options()
+  expect_in("crosstable_remove_zero_percent", names(a))
+})
+
+
 test_that("All options work", {
   crosstable_reset_options(quiet=TRUE)
   local_reproducible_output(width = 1000)
@@ -50,7 +77,7 @@ test_that("All options work", {
     suppressWarnings()
 
   crosstable_options(
-    zero_percent=TRUE,
+    remove_zero_percent=TRUE,
     only_round=TRUE,
     verbosity_autotesting="quiet",
     verbosity_duplicate_cols="quiet",
@@ -68,7 +95,7 @@ test_that("All options work", {
     date_format="%d/%m/%Y",
     times=c(0,100),
     followup=TRUE,
-    test_arg = crosstable_test_args(plim=1),
+    test_args = crosstable_test_args(plim=1),
     effect_args = crosstable_effect_args(conf_level=0.7),
     .local=TRUE
   )

@@ -6,11 +6,11 @@
 \usage{
 crosstable_options(
   ...,
-  zero_percent = FALSE,
+  remove_zero_percent = FALSE,
   only_round = FALSE,
   verbosity_autotesting = "default",
   verbosity_duplicate_cols = "default",
-  crosstable_fishertest_B = 1e+05,
+  fishertest_B = 1e+05,
   total,
   percent_pattern,
   margin,
@@ -26,7 +26,7 @@ crosstable_options(
   date_format,
   times,
   followup,
-  test_arg,
+  test_args,
   effect_args,
   wrap_id = 70,
   compact_padding = 25,
@@ -42,27 +42,35 @@ crosstable_options(
   fontsize_body,
   fontsize_subheaders,
   fontsize_header,
+  generic_labels,
   units = "in",
   peek_docx = TRUE,
   font_code = "Consolas",
   add_max_cols = 25,
+  gg_width,
+  gg_height,
   format_legend_name,
   table_legend_par_before,
   table_legend_prefix,
   figure_legend_par_after,
   figure_legend_prefix,
   normal_squish,
+  normal_font_size,
   title_squish,
   allow_break,
+  section_title,
+  section_title_level,
+  section_sentence,
   style_normal,
-  style_character,
-  style_strong,
   style_image,
   style_legend,
   style_heading,
   style_list_ordered,
   style_list_unordered,
   scientific_log,
+  clean_names_fun,
+  verbosity_na_cols,
+  format_epsilon,
   .local = FALSE,
   reset = deprecated()
 )
@@ -70,7 +78,7 @@ crosstable_options(
 \arguments{
 \item{...}{unused}
 
-\item{zero_percent}{set to TRUE so that proportions are not displayed if \code{n==0}}
+\item{remove_zero_percent}{set to TRUE so that proportions are not displayed if \code{n==0}}
 
 \item{only_round}{default argument for \code{\link[=format_fixed]{format_fixed()}}}
 
@@ -78,7 +86,7 @@ crosstable_options(
 
 \item{verbosity_duplicate_cols}{one of \code{default}, \code{quiet}, or \code{verbose}.}
 
-\item{crosstable_fishertest_B}{number of simulations to perform when \code{fisher.test()} is failing (FEXACT error 7).}
+\item{fishertest_B}{number of simulations to perform when \code{fisher.test()} is failing (FEXACT error 7).}
 
 \item{total}{For setting \code{\link[=crosstable]{crosstable()}} arguments globally.}
 
@@ -110,7 +118,7 @@ crosstable_options(
 
 \item{followup}{For setting \code{\link[=crosstable]{crosstable()}} arguments globally.}
 
-\item{test_arg}{For setting \code{\link[=crosstable]{crosstable()}} arguments globally.}
+\item{test_args}{For setting \code{\link[=crosstable]{crosstable()}} arguments globally.}
 
 \item{effect_args}{For setting \code{\link[=crosstable]{crosstable()}} arguments globally.}
 
@@ -142,6 +150,8 @@ crosstable_options(
 
 \item{fontsize_header}{For setting \code{\link[=as_flextable]{as_flextable()}} arguments globally.}
 
+\item{generic_labels}{For setting \code{\link[=as_flextable]{as_flextable()}} arguments globally.}
+
 \item{units}{default units in \code{\link[=body_add_gg2]{body_add_gg2()}} and \code{\link[=body_add_img2]{body_add_img2()}}}
 
 \item{peek_docx}{behavior of \code{\link[=peek]{peek()}}, which will open a \code{docx} if \code{TRUE} (default) and an \code{xlsx} if \code{FALSE}}
@@ -149,6 +159,8 @@ crosstable_options(
 \item{font_code}{font family used to show code, most likely a monospaced typeface such as Consolas (default)}
 
 \item{add_max_cols}{max number of columns a crosstable can have to be added to a Word document}
+
+\item{gg_width, gg_height}{cf. \code{\link[=body_add_gg2]{body_add_gg2()}}}
 
 \item{format_legend_name}{how the legend name ("Table", "Figure") is formatted. Default to \code{officer::fp_text_lite(bold=TRUE)}}
 
@@ -160,15 +172,15 @@ crosstable_options(
 
 \item{normal_squish}{Should you squish text in normal paragraphs?}
 
+\item{normal_font_size}{Font size in normal paragraph, cf. \code{\link[=body_add_normal]{body_add_normal()}}}
+
 \item{title_squish}{Should you squish text in headers paragraphs?}
 
 \item{allow_break}{allow crosstable rows to break across pages}
 
+\item{section_title, section_title_level, section_sentence}{cf. \code{\link[=body_add_table_section]{body_add_table_section()}}}
+
 \item{style_normal}{For specifying styles used in your \code{{officer}} template.}
-
-\item{style_character}{For specifying styles used in your \code{{officer}} template.}
-
-\item{style_strong}{For specifying styles used in your \code{{officer}} template.}
 
 \item{style_image}{For specifying styles used in your \code{{officer}} template.}
 
@@ -179,6 +191,12 @@ crosstable_options(
 \item{style_list_ordered, style_list_unordered}{For specifying styles used by lists in the \code{rdocx} template. Needed for \code{\link[=body_add_list]{body_add_list()}} to work.}
 
 \item{scientific_log}{the maximum power a number can have before being formatted as scientific. Default to 4 so applies on numbers <1e-4 or >1e4.}
+
+\item{clean_names_fun}{cf. \code{\link[=clean_names_with_labels]{clean_names_with_labels()}}}
+
+\item{verbosity_na_cols}{verbosity of a warning}
+
+\item{format_epsilon}{cf. \code{\link[=format_fixed]{format_fixed()}}}
 
 \item{.local}{if TRUE, the effect will only apply to the local frame (thanks to \code{rlang::local_options()})}
 

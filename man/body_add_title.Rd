@@ -9,6 +9,7 @@ body_add_title(
   value,
   level = 1,
   squish = TRUE,
+  envir = parent.frame(),
   style = getOption("crosstable_style_heading", "heading")
 )
 }
@@ -20,6 +21,8 @@ body_add_title(
 \item{level}{the level of the title. See \code{styles_info(doc)} to know the possibilities.}
 
 \item{squish}{Whether to squish the result (remove trailing and repeated spaces). Default to \code{TRUE}.}
+
+\item{envir}{Environment to evaluate each expression in \code{glue()}.}
 
 \item{style}{the name of the title style. See \code{styles_info(doc)} to know the possibilities.}
 }

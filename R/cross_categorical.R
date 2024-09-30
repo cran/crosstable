@@ -5,7 +5,7 @@
 #' @keywords internal
 #' @noRd
 cross_categorical=function(data_x, data_y, showNA, total, label, percent_digits, percent_pattern,
-                           drop_levels, test, test_args, effect, effect_args){
+                           drop_levels, test, test_args, effect, effect_args, remove_zero_percent){
 
   stopifnot(ncol(data_x)==1 && (is.null(data_y) || ncol(data_y)==1))
   stopifnot(is.character.or.factor(data_x[[1]]))
@@ -22,14 +22,16 @@ cross_categorical=function(data_x, data_y, showNA, total, label, percent_digits,
   if(is.null(data_y)){
     rtn=summarize_categorical_single(data_x[[1]],
                                      percent_pattern=percent_pattern, showNA=showNA,
-                                     total=total, digits=percent_digits)
+                                     total=total, digits=percent_digits,
+                                     remove_zero_percent=remove_zero_percent)
   } else if(is.character.or.factor(data_y[[1]])){
-    if(isTRUE(drop_levels)) data_y[[1]] = fct_drop(data_y[[1]])
+    data_y[[1]] = recode_any(data_y[[1]], ".id2"=".id", "label2"="label")
     rtn=summarize_categorical_by(data_x[[1]], data_y[[1]],
                                  percent_pattern=percent_pattern, showNA=showNA,
                                  total=total, digits=percent_digits,
                                  test=test, test_args=test_args,
-                                 effect=effect, effect_args=effect_args)
+                                 effect=effect, effect_args=effect_args,
+                                 remove_zero_percent=remove_zero_percent)
   } else {
     return(NULL)
   }
@@ -49,11 +51,14 @@ cross_categorical=function(data_x, data_y, showNA, total, label, percent_digits,
 #' @importFrom tidyr replace_na
 #' @keywords internal
 #' @noRd
-summarize_categorical_single = function(x, showNA, total, digits, percent_pattern){
+summarize_categorical_single = function(x, showNA, total, digits, percent_pattern,
+                                        remove_zero_percent=NULL){
   tbd = table(x, useNA = "always") %>%
     as.data.frame() %>%
     select(x=1, n=2) #needed for an odd bug on fedora-devel
-  zero_percent = getOption("crosstable_zero_percent", FALSE)
+  if(is.null(remove_zero_percent)){
+    remove_zero_percent = getOption("crosstable_remove_zero_percent", FALSE)
+  }
   ppv_ci = percent_pattern_contains(percent_pattern, "_inf|_sup")
   if(!ppv_ci) getTableCI = function(x, ...) x
 
@@ -71,11 +76,14 @@ summarize_categorical_single = function(x, showNA, total, digits, percent_patter
     ) %>%
     getTableCI(digits=digits) %>%
     mutate(across(starts_with("p_"), ~format_fixed(.x, digits=digits, percent=TRUE))) %>%
-    transmute(variable=replace_na(x, "NA"),
-              value=ifelse(is.na(x) | .data$n==0 & zero_percent,
-                           .data$n, glue(percent_pattern$body)))
+    transmute(
+      variable = replace_na(x, "NA"),
+      value=ifelse(is.na(x) | .data$n==0 & remove_zero_percent,
+                   .data$n, glue(percent_pattern$body))
+    )
 
-  .showNA = showNA=="always" || showNA=="ifany" && (anyNA(x))
+  any_na = anyNA(x) || anyNA(levels(x)) || "NA" %in% x
+  .showNA = showNA=="always" || (showNA=="ifany" && any_na)
   if(!.showNA){
     rtn = filter(rtn, .data$variable!="NA")
   }
@@ -88,7 +96,7 @@ summarize_categorical_single = function(x, showNA, total, digits, percent_patter
       getTableCI(digits=digits) %>%
       mutate(across(starts_with("p_"), ~format_fixed(.x, digits=digits, percent=TRUE))) %>%
       transmute(.data$variable,
-                value=ifelse(.data$n==0 & zero_percent, .data$n,
+                value=ifelse(.data$n==0 & remove_zero_percent, .data$n,
                              glue(percent_pattern$total_all)))
     rtn = bind_rows(rtn, .total)
   }
@@ -110,8 +118,11 @@ summarize_categorical_single = function(x, showNA, total, digits, percent_patter
 summarize_categorical_by = function(x, by,
                                     percent_pattern, margin,
                                     showNA, total, digits,
-                                    test, test_args, effect, effect_args){
-  zero_percent = getOption("crosstable_zero_percent", FALSE)
+                                    test, test_args, effect, effect_args,
+                                    remove_zero_percent=NULL){
+  if(is.null(remove_zero_percent)){
+    remove_zero_percent = getOption("crosstable_remove_zero_percent", FALSE)
+  }
   ppv_ci = percent_pattern_contains(percent_pattern, "_inf|_sup")
   if(!ppv_ci) getTableCI = function(x, ...) x
 
@@ -151,10 +162,12 @@ summarize_categorical_by = function(x, by,
     select(x, by, n, order(colnames(.)))
 
   rtn = .table %>%
-    transmute(variable=x %>% str_replace("NA", "'NA'") %>% replace_na("NA"),
-              by=.data$by,
-              value=ifelse(is.na(x)|is.na(by)|.data$n==0&zero_percent,
-                           .data$n, glue(percent_pattern$body))) %>%
+    transmute(
+      variable = replace_na(x, "NA"),
+      by=.data$by,
+      value=ifelse(is.na(x)|is.na(by)|.data$n==0&remove_zero_percent,
+                   .data$n, glue(percent_pattern$body))
+    ) %>%
     pivot_wider(names_from="by", values_from = "value")
 
   if(2 %in% total){
@@ -182,7 +195,7 @@ summarize_categorical_by = function(x, by,
       getTableCI(digits=digits) %>%
       mutate(across(starts_with("p_"), ~format_fixed(.x, digits=digits, percent=TRUE)),
              x=fct_na_value_to_level(.data$by, "NA"),
-             value=ifelse(is.na(by) | .data$n==0&zero_percent, .data$n,
+             value=ifelse(is.na(by) | .data$n==0&remove_zero_percent, .data$n,
                           glue(percent_pattern$total_row))) %>%
       select(x, value) %>%
       pivot_wider(names_from="x", values_from = "value") %>%
@@ -240,6 +253,7 @@ summarize_categorical_by = function(x, by,
 #'
 #' @param margin a vector giving the margins to compute.
 #' @param na whether to use `NA`
+#' @param warn_duplicates whether to warn if margin has duplicates
 #'
 #' @return a list
 #'
@@ -253,8 +267,9 @@ summarize_categorical_by = function(x, by,
 #' @examples
 #' get_percent_pattern(c("cells","row","column"))
 #' get_percent_pattern(c("cells","row","column"), na=TRUE)
-get_percent_pattern = function(margin=c("row", "column", "cell", "none", "all"), na=FALSE){
-  if(missing(margin)) margin="row"
+get_percent_pattern = function(margin=c("row", "column", "cell", "none", "all"), na=FALSE,
+                               warn_duplicates=TRUE){
+  if(is.null(margin) || missing(margin)) margin="row"
   rtn = list(
     body="{n} ({p_col})",
     total_row="{n} ({p_col})",
@@ -293,7 +308,7 @@ get_percent_pattern = function(margin=c("row", "column", "cell", "none", "all"),
   x = marginopts %>%
     map(~{ #not map_dbl :-( # https://github.com/tidyverse/purrr/issues/841
       rtn = margin[margin %in% .x]
-      if(length(rtn)>1){
+      if(length(rtn)>1 && isTRUE(warn_duplicates)){
         cli_warn("Duplicated margin{?s}: {.code {rtn}}",
                  class="crosstable_duplicated_margin",
                  call=crosstable_caller$env)

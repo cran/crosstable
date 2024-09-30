@@ -208,39 +208,32 @@ get_glue_vars = function(.x){
 
 
 
-#' test
-#'
-#' @param x x
+#' @keywords internal
+#' @noRd
+is_blank = function(x) {
+  is.character(x) && all(x=="", na.rm=TRUE)
+}
+
 #' @author David Hajage
 #' @keywords internal
 #' @noRd
 is.character.or.factor = function(x) {
-  is.character(x) | is.factor(x)
+  is.character(x) || is.factor(x)
 }
 
-#' test
-#'
-#' @param x x
 #' @author David Hajage
 #' @keywords internal
 #' @noRd
 is.numeric.and.not.surv = function(x) {
-  is.numeric(x) & !is.Surv(x)
+  is.numeric(x) && !is.Surv(x)
 }
 
-#' test
-#'
-#' @param x x
-#'
 #' @keywords internal
 #' @noRd
 is.Surv = function(x) {
   inherits(x, "Surv")
 }
 
-#' test
-#'
-#' @param x x
 #' @keywords internal
 #' @noRd
 is.date = function(x){
@@ -248,9 +241,6 @@ is.date = function(x){
     inherits(x, "POSIXct") || inherits(x, "POSIXlt")
 }
 
-#' test
-#'
-#' @param x x
 #' @keywords internal
 #' @noRd
 is.period = function(x){
@@ -258,8 +248,6 @@ is.period = function(x){
 }
 
 #' paste all classes (minus "labelled")
-#'
-#' @param x x
 #' @keywords internal
 #' @noRd
 paste_classes = function(x){
@@ -345,6 +333,43 @@ check_percent_pattern = function(percent_pattern){
     }
   })
 }
+
+#' @keywords internal
+#' @noRd
+validate_percent_pattern = function(margin, percent_pattern,
+                                    missing_margin, missing_percent_pattern) {
+  if(missing_margin) margin = getOption("crosstable_margin")
+  if(!is.null(margin)){
+    if(length(margin)>3){
+      cli_abort(c("Margin should be of max length 3",
+                  i=glue("margin={paste0(margin, collapse=', ')}")),
+                class="crosstable_margin_length_3_error")
+    }
+    if(missing_percent_pattern) {
+      percent_pattern = get_percent_pattern(margin)
+    } else if(!missing_margin){
+      cli_warn(c("Argument `margin` is ignored if `percent_pattern` is set.",
+                 i='margin="{margin}"',
+                 i='percent_pattern="{percent_pattern}"'),
+               class="crosstable_margin_percent_pattern_warning",
+               call=current_env())
+    }
+  }
+  # browser()
+  if(is.list(percent_pattern)){
+    default_pp = get_percent_pattern(margin, warn_duplicates=FALSE)
+    percent_pattern = modifyList(default_pp, percent_pattern)
+  } else if(length(percent_pattern)==1){
+    percent_pattern = list(
+      body=percent_pattern,
+      total_row="{n} ({p_col})",
+      total_col="{n} ({p_row})",
+      total_all="{n} ({p_tot})"
+    )
+  }
+  percent_pattern
+}
+
 
 #' Rudimentary function to clean the names
 #'
@@ -530,13 +555,15 @@ str_wrap2 = function(x, width, ...){
 #' @noRd
 #' @examples
 #' x=1:15;y="foobar"
-#' rec(x,y, sep=", ")
+#' rec(x, y, sep=", ")
 #' @importFrom glue glue glue_collapse
 #' @importFrom purrr imap map
 #' @importFrom rlang set_names
-rec = function(..., sep=getOption("rec_sep", "\n"), sep_int=getOption("rec_sep", ", "),
+rec = function(..., sep=getOption("rec_sep", "\n"),
+               sep_int=getOption("rec_sep", ", "), #internal
                glue_pattern="{.name} = {.value}",
-               max_length=getOption("rec_max_length", 10), .envir = parent.frame()){
+               max_length=getOption("rec_max_length", 10),
+               .envir = parent.frame()){
   l = as.list(substitute(list(...)))[-1L] %>% unlist() %>% set_names()
   ll = map(l, eval, envir=.envir)
   tmp = ll %>% imap(~{
@@ -611,6 +638,26 @@ cl = function(...){
   c(...) %>% set_names(nm)
 }
 
+
+#' Wrapper around forcats::fct_recode and dplyr::recode
+#' Syntax: "New"="Old"
+#'
+#' @importFrom forcats fct_recode
+#' @importFrom rlang dots_list
+#' @keywords internal
+#' @noRd
+recode_any = function(x, ...){
+  stopifnot(is.character.or.factor(x))
+  l = unlist(dots_list(...))
+  if(is.factor(x)){
+    lvls = intersect(l, x)
+    x = fct_recode(x, !!!lvls)
+  } else if(is.character(x)){
+    l = set_names(names(l), l)
+    x = recode(x, !!!l)
+  }
+  x
+}
 
 #' @source adapted from gtools::mixedorder() v3.9.2
 #' @keywords internal

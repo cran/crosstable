@@ -79,9 +79,11 @@ body_add_crosstable = function (doc, x, body_fontsize=NULL,
 #' @param doc the doc object (created with the `read_docx` function of `officer` package)
 #' @param ... one or several character strings, pasted using `.sep`. As with `glue::glue()`, expressions enclosed by braces will be evaluated as R code. If more than one variable is passed, all should be of length 1.
 #' @param style Style for normal text. Best set with [crosstable_options()].
+#' @param font_size Font size.
 #' @param .sep Separator used to separate elements.
 #' @param squish Whether to squish the result (remove trailing and repeated spaces). Default to `TRUE`. Allows to add multiline paragraph without breaking the string.
 #' @param parse which format to parse. Default to all formats (`c("ref", "format", "code")`).
+#' @param envir Environment to evaluate each expression in `glue()`.
 #'
 #' @section Markdown support:
 #' In all `crosstable` helpers for `officer`, you can use the following Markdown syntax to format your text:
@@ -142,25 +144,31 @@ body_add_crosstable = function (doc, x, body_fontsize=NULL,
 #'   body_add_normal() %>%
 #'   body_add_table_legend("Some table legend", bookmark="my_bkm") %>%
 #'   write_and_open()
-body_add_normal = function(doc, ..., .sep="", style=NULL, squish=TRUE, parse=c("ref", "format", "code")) {
+body_add_normal = function(doc, ..., .sep="", style=NULL, squish=TRUE, font_size=NA,
+                           envir=parent.frame(),
+                           parse=c("ref", "format", "code")) {
   if(missing(squish)) squish = getOption("crosstable_normal_squish", TRUE)
+  if(missing(font_size)) font_size = getOption("crosstable_normal_font_size", NA)
   dots = list(...)
   if(is.null(style)){
-    style = getOption('crosstable_style_normal', doc$default_styles$paragraph)
+    style = getOption("crosstable_style_normal", doc$default_styles$paragraph)
   }
   if(length(dots)==0) dots=""
   dots_lengths = lengths(dots)
 
   if(all(dots_lengths==1)){ #one or several vectors of length 1
-    value = do.call(glue, c(dots, .sep=.sep, .envir=parent.frame()))
+    value = do.call(glue, c(dots, .sep=.sep, .envir=envir))
     if(squish) value = str_squish(value)
     parse_ref = "ref" %in% parse
     parse_format = "format" %in% parse
     parse_code = "code" %in% parse
-    doc = body_add_parsed(doc, value, style, parse_ref, parse_format, parse_code)
+    doc = body_add_parsed(doc, value, style=style, parse_ref=parse_ref,
+                          parse_format=parse_format, parse_code=parse_code,
+                          font_size=font_size)
   } else if(length(dots)==1) { #one vector (of 1 or more) -> recursive call
     for(i in dots[[1]]){
-      doc = body_add_normal(doc, i, .sep=.sep, squish=squish)
+      doc = body_add_normal(doc, i, .sep=.sep, style=style, squish=squish,
+                            font_size=font_size, parse=parse)
     }
   } else { #several vectors of which at least one is length 2+
     cli_abort(c("{.fun body_add_normal} only accepts either one vector of any length or several vectors of length 1",
@@ -181,6 +189,7 @@ body_add_normal = function(doc, ..., .sep="", style=NULL, squish=TRUE, parse=c("
 #' @param level the level of the title. See \code{styles_info(doc)} to know the possibilities.
 #' @param squish Whether to squish the result (remove trailing and repeated spaces). Default to `TRUE`.
 #' @param style the name of the title style. See \code{styles_info(doc)} to know the possibilities.
+#' @param envir Environment to evaluate each expression in `glue()`.
 #'
 #' @return The docx object `doc`
 #'
@@ -201,13 +210,14 @@ body_add_normal = function(doc, ..., .sep="", style=NULL, squish=TRUE, parse=c("
 #'    body_add_normal("La table iris a ", ncol(iris), " colonnes.")
 #' #write_and_open(doc)
 body_add_title = function(doc, value, level=1, squish=TRUE,
-                          style = getOption('crosstable_style_heading', "heading")) {
+                          envir=parent.frame(),
+                          style=getOption("crosstable_style_heading", "heading")) {
   assert_integerish(level)
   if(missing(squish)) squish = getOption("crosstable_title_squish", TRUE)
-  value = glue(value, .envir = parent.frame())
+  value = glue(value, .envir = envir)
   if(squish) value = str_squish(value)
   style = paste(style, level)
-  body_add_parsed(doc, value, style = style)
+  body_add_parsed(doc, value, style=style)
 }
 
 
@@ -257,9 +267,9 @@ body_add_list = function(doc, value, ordered=FALSE, style=NULL, ...){
 body_add_list_item = function(doc, value, ordered=FALSE, style=NULL, ...){
   if(is.null(style)){
     if(ordered){
-      style = getOption('crosstable_style_list_ordered', NULL)
+      style = getOption("crosstable_style_list_ordered", NULL)
     } else {
-      style = getOption('crosstable_style_list_unordered', NULL)
+      style = getOption("crosstable_style_list_unordered", NULL)
     }
     if(is.null(style)){
       cli_abort("Ordered lists and bullet lists are not supported by the default officer template. You have to set them in a custom template and use either the `style` argument or crosstable options. See `?body_add_list` examples for more details.",
@@ -280,7 +290,7 @@ body_add_list_item = function(doc, value, ordered=FALSE, style=NULL, ...){
 #' @param fun_before a function to be used before each table
 #' @param fun_after a function to be used after each table.
 #' @param fun Deprecated
-#' @param ... arguments passed on to [body_add_crosstable()] or [body_add_flextable()]
+#' @param ... arguments passed on to [body_add_crosstable()] or [flextable::body_add_flextable()]
 #'
 #' @section `fun_before` and `fun_after`:
 #' These should be function of the form `function(doc, .name)` where `.name` is the name of the current table of the list.
@@ -417,7 +427,7 @@ body_add_crosstable_list = function(...){
 #' @param title the title to add for the section. Can also be `FALSE` (no title) or `TRUE` (the title defaults to `legend`)
 #' @param title_lvl the title level if applicable
 #' @param sentence a sentence to add between the title (if applicable) and the table. If `TRUE`, defaults to `"Information about {tolower(title)} is described in Table @ref({bookmark})"`.
-#' @param ... passed on to [body_add_flextable()] or [body_add_crosstable()]
+#' @param ... passed on to [flextable::body_add_flextable()] or [body_add_crosstable()]
 #'
 #' @return The `docx` object `doc`
 #' @importFrom flextable body_add_flextable qflextable
@@ -436,9 +446,10 @@ body_add_table_section = function(doc, x, legend, ..., bookmark=NULL,
                                   title=getOption("crosstable_section_title", TRUE),
                                   title_lvl=getOption("crosstable_section_title_level", 3),
                                   sentence=getOption("crosstable_section_sentence", FALSE)){
-  stopifnot(!is.null(x))
-  stopifnot(inherits(x, c("data.frame", "flextable", "crosstable")))
   ctname = rlang::caller_arg(x)
+  if(is.null(x)) cli_abort("{.arg x} ({.val {ctname}}) should not be NULL.")
+  ok_classes = c("data.frame", "flextable", "crosstable")
+  if(!inherits(x, ok_classes)) cli_abort("{.arg x} ({.val {ctname}}) should not of class {.cls {ok_classes}}.")
   if(is.null(bookmark)) bookmark = crosstable_clean_names(ctname)
 
   if(!is.null(title) && !isFALSE(title)){
@@ -451,13 +462,13 @@ body_add_table_section = function(doc, x, legend, ..., bookmark=NULL,
   } else if(!is.null(sentence) & !isFALSE(sentence)) {
     doc = body_add_normal(doc, sentence)
   }
+  doc = body_add_table_legend(doc, legend=legend, bookmark=bookmark)
   if(inherits(x, "crosstable")){
     doc = body_add_crosstable(doc, x, ...)
   } else {
     if(!inherits(x, "flextable")) x = qflextable(x)
     doc = body_add_flextable(doc, x, ...)
   }
-  doc = body_add_table_legend(doc, legend=legend, bookmark=bookmark)
   doc
 }
 
@@ -478,6 +489,7 @@ body_add_table_section = function(doc, x, legend, ..., bookmark=NULL,
 #' @param par_before,par_after should an empty paragraph be inserted before/after the legend?
 #' @param legacy use the old version of this function, if you cannot update `{officer}` to v0.4+
 #' @param ... unused
+#' @param envir Environment to evaluate each expression in `glue()`.
 #'
 #' @return The docx object `doc`
 #'
@@ -524,7 +536,7 @@ body_add_table_section = function(doc, x, legend, ..., bookmark=NULL,
 #' #If asked to update fields, press "Yes". Otherwise press Ctrl+A then F9 twice for the references
 #' #to appear.
 body_add_table_legend = function(doc, legend, ..., bookmark=NULL,
-                                 legend_style=getOption('crosstable_style_legend',
+                                 legend_style=getOption("crosstable_style_legend",
                                                         doc$default_styles$paragraph),
                                  style=deprecated(),
                                  legend_prefix=NULL,
@@ -532,6 +544,7 @@ body_add_table_legend = function(doc, legend, ..., bookmark=NULL,
                                  legend_name="Table",
                                  seqfield="SEQ Table \\* Arabic",
                                  par_before=FALSE,
+                                 envir=parent.frame(),
                                  legacy=FALSE){
   check_dots_empty()
   if(missing(par_before)) par_before = getOption("crosstable_table_legend_par_before", FALSE)
@@ -542,7 +555,7 @@ body_add_table_legend = function(doc, legend, ..., bookmark=NULL,
   body_add_legend(doc=doc, legend=legend, legend_name=legend_name,
                   bookmark=bookmark, legend_prefix=legend_prefix, legend_style=legend_style,
                   name_format=name_format, seqfield=seqfield,
-                  style=style, legacy=legacy, envir=parent.frame())
+                  style=style, legacy=legacy, envir=envir)
 }
 
 #' @rdname body_add_legend
@@ -550,7 +563,7 @@ body_add_table_legend = function(doc, legend, ..., bookmark=NULL,
 #' @importFrom lifecycle deprecated
 #' @importFrom rlang check_dots_empty
 body_add_figure_legend = function(doc, legend, ..., bookmark=NULL,
-                                  legend_style=getOption('crosstable_style_legend',
+                                  legend_style=getOption("crosstable_style_legend",
                                                          doc$default_styles$paragraph),
                                   style=deprecated(),
                                   legend_prefix=NULL,
@@ -558,6 +571,7 @@ body_add_figure_legend = function(doc, legend, ..., bookmark=NULL,
                                   legend_name="Figure",
                                   seqfield="SEQ Figure \\* Arabic",
                                   par_after=FALSE,
+                                  envir=parent.frame(),
                                   legacy=FALSE){
   check_dots_empty()
   # ellipsis::check_dots_empty()
@@ -566,7 +580,7 @@ body_add_figure_legend = function(doc, legend, ..., bookmark=NULL,
   doc = body_add_legend(doc=doc, legend=legend, legend_name=legend_name,
                         bookmark=bookmark, legend_prefix=legend_prefix, legend_style=legend_style,
                         name_format=name_format, seqfield=seqfield,
-                        style=style, legacy=legacy, envir=parent.frame())
+                        style=style, legacy=legacy, envir=envir)
   if(par_after){
     doc=body_add_normal(doc, "")
   }
@@ -593,7 +607,7 @@ body_add_legend = function(doc, legend, legend_name, bookmark,
 
   legend = paste0(legend_prefix, legend)
   if(is.null(name_format)){
-    name_format = getOption('crosstable_format_legend_name', fp_text_lite(bold=TRUE))
+    name_format = getOption("crosstable_format_legend_name", fp_text_lite(bold=TRUE))
   }
   fp_size = fp_text_lite(font.size=name_format$font.size)
 
@@ -682,7 +696,9 @@ body_add_img2 = function(doc, src, width, height,
 #'  body_add_gg2(p, w=14, h=10, scale=1.5) %>% #or units="cm" instead of using options
 #'  body_add_normal("Text after")
 #' write_and_open(doc)
-body_add_gg2 = function(doc, value, width = 6, height = 5,
+body_add_gg2 = function(doc, value,
+                        width = getOption("crosstable_gg_width", 6),
+                        height = getOption("crosstable_gg_height", 5),
                         units = getOption("crosstable_units", "in"),
                         style = getOption("crosstable_style_image", doc$default_styles$paragraph),
                         res = 300, ... ){
@@ -701,17 +717,19 @@ body_add_gg2 = function(doc, value, width = 6, height = 5,
 #'
 #' @param doc a `rdocx` object
 #' @param ... named
+#' @param envir Environment to evaluate each expression in `glue()`.
 #'
 #' @importFrom glue glue
 #' @importFrom purrr iwalk safely
 #' @return The docx object `doc`
 #' @author Dan Chaltiel
 #' @export
-body_replace_text_at_bkms = function(doc, ...){
+body_replace_text_at_bkms = function(doc, ...,
+                                     envir=parent.frame()){
   l=list(...)
   #TODO tester qu'il y a bien un nom à chaque élément!
   iwalk(l, ~{
-    .x = glue(.x, .envir=parent.frame())
+    .x = glue(.x, .envir=envir)
     x = safely(body_replace_text_at_bkm)(doc, .y, .x)
     if(is.null(x$result)) warning(x$error$message, call.=FALSE)
     else doc = x$result
@@ -857,7 +875,8 @@ write_and_open = function(doc, docx.file){
 # nocov start
 #' Generate a macro file for autofitting
 #'
-#' This function generates a file that can be imported into MS Word in order to use a macro for autofitting all tables in a document at once. This macro file should be imported only once per computer.
+#' Autofitting using existing tools in flextable should be enough for most cases. For the others, here is a VBA macro which autofits all tables from inside MS Word.
+#' This function generates a file that can be imported into MS Word in order to use this macro. The macro file should be imported only once per computer.
 #'
 #' @section Installation:
 #'  * In the `R` console, run `generate_autofit_macro()` to generate the file `crosstable_autofit.bas` in your working directory.
@@ -871,7 +890,7 @@ write_and_open = function(doc, docx.file){
 #' @author Dan Chaltiel
 #' @export
 generate_autofit_macro = function(){
-  fileConn<-file("crosstable_autofit.bas")
+  fileConn = file("crosstable_autofit.bas")
   writeLines(c(
     'Attribute VB_Name = "CrosstableMacros"',
     'Sub CrosstableAutofitAll()',
@@ -898,8 +917,9 @@ generate_autofit_macro = function(){
 #' @keywords internal
 #' @noRd
 body_add_parsed = function(doc, value, style, parse_ref=TRUE, parse_format=TRUE,
-                           parse_code=TRUE, parse_newline=TRUE, ...){
-  p = parse_md(value, parse_ref, parse_format, parse_code)
+                           parse_code=TRUE, parse_newline=TRUE, font_size=NA, ...){
+  p = parse_md(value, parse_ref=parse_ref, parse_format=parse_format, parse_code=parse_code,
+               parse_newline=parse_newline, font_size=font_size, return_list=FALSE)
   body_add_fpar(doc, p, style, ...)
 }
 
@@ -918,7 +938,7 @@ utils::globalVariables(c("do", "end", "start"))
 #' @keywords internal
 #' @noRd
 parse_md = function(x, parse_ref=TRUE, parse_format=TRUE, parse_code=TRUE, parse_newline=TRUE,
-                    return_list=FALSE){
+                    return_list=FALSE, font_size=NA){
   if(nchar(x)==0) return(fpar(x))
 
   x = str_replace_all(x, fixed("**"), fixed("%%")) #better separates bold from italic
@@ -995,16 +1015,19 @@ parse_md = function(x, parse_ref=TRUE, parse_format=TRUE, parse_code=TRUE, parse
     select(-ref)
 
   p = list()
-  p[[1]] = ftext(substring(x, 1, rtn$start[1]-1))
+  fmt = fp_text_lite(font.size=font_size)
+  p[[1]] = ftext(substring(x, 1, rtn$start[1]-1), fmt)
   for(i in seq(nrow(rtn))){
     d = as.list(rtn[i, ])
-    if(!is.na(d$shade)){ #bug in fp_text_lite(), see officer/#538
+    if(!is.na(d$shade)){
+      #bug in fp_text_lite(), change when https://github.com/davidgohel/officer/issues/538 is fixed
       if(!is.na(d$color)) cli_warn("Shade can only be added to default black text.")
       d$color = "black"
     }
 
     fmt = fp_text_lite(bold=d$bold, italic=d$italic, underlined=d$underlined, color=d$color,
-                       shading.color=d$shade, font.family=d$font, vertical.align=d$valign)
+                       shading.color=d$shade, font.family=d$font, vertical.align=d$valign,
+                       font.size=font_size)
     next_start = rtn[i+1, ][["start"]]-1
 
     if(d$format=="ref"){

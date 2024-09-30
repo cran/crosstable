@@ -28,6 +28,7 @@ crosstable_caller = rlang::env()
 #' @param label Whether to show labels. See [import_labels()] or [set_label()]for how to add labels to the dataset columns.
 #' @param cor_method One of `c("pearson", "kendall", "spearman")` to indicate which correlation coefficient is to be used.
 #' @param drop_levels Whether to drop unused levels of factor variables. Default to `TRUE`.
+#' @param remove_zero_percent Whether to remove proportions when `n==0`. Default to `FALSE`.
 #' @param times When using formula with [survival::Surv()] objects, which times to summarize.
 #' @param followup When using formula with [survival::Surv()] objects, whether to display follow-up time.
 #' @param test Whether to perform tests.
@@ -107,7 +108,7 @@ crosstable = function(data, cols=everything(), ..., by=NULL,
                       showNA = c("ifany", "always", "no"), label = TRUE,
                       funs = c(" " = cross_summary), funs_arg=list(),
                       cor_method = c("pearson", "kendall", "spearman"),
-                      drop_levels = FALSE,
+                      drop_levels = FALSE, remove_zero_percent=NULL,
                       unique_numeric = 3, date_format=NULL,
                       times = NULL, followup = FALSE,
                       test = FALSE, test_args = crosstable_test_args(),
@@ -120,6 +121,7 @@ crosstable = function(data, cols=everything(), ..., by=NULL,
 
   # Options -------------------------------------------------------------
   missing_percent_pattern = missing(percent_pattern)
+  missing_margin = missing(margin)
 
   if(missing(total)) total = getOption("crosstable_total", 0)
   if(missing(percent_digits)) percent_digits = getOption("crosstable_percent_digits", 2)
@@ -136,6 +138,7 @@ crosstable = function(data, cols=everything(), ..., by=NULL,
   if(missing(test_args)) test_args = getOption("crosstable_test_args", crosstable_test_args())
   if(missing(effect_args)) effect_args = getOption("crosstable_effect_args", crosstable_effect_args())
   if(missing(num_digits)) num_digits = getOption("crosstable_num_digits",  1)
+  if(missing_margin) margin = getOption("crosstable_margin",  NULL)
 
   if(!"dig" %in% names(funs_arg)){
     funs_arg = c(funs_arg, list(dig=num_digits))
@@ -175,31 +178,7 @@ crosstable = function(data, cols=everything(), ..., by=NULL,
   }
   reportAssertions(coll)
 
-  if(missing(margin)) margin = getOption("crosstable_margin")
-  if(!is.null(margin)){
-    if(length(margin)>3){
-      cli_abort(c("Margin should be of max length 3",
-                  i=glue("margin={paste0(margin, collapse=', ')}")),
-                class="crosstable_margin_length_3_error")
-    }
-    if(missing_percent_pattern) {
-      percent_pattern = get_percent_pattern(margin)
-    } else {
-      cli_warn(c("Argument `margin` is ignored if `percent_pattern` is set.",
-                 i='margin="{margin}"',
-                 i='percent_pattern="{percent_pattern}"'),
-               class="crosstable_margin_percent_pattern_warning",
-               call=current_env())
-    }
-  }
-  if(length(percent_pattern)==1){
-    percent_pattern = list(
-      body=percent_pattern,
-      total_row="{n} ({p_col})",
-      total_col="{n} ({p_row})",
-      total_all="{n} ({p_tot})"
-    )
-  }
+  percent_pattern = validate_percent_pattern(margin, percent_pattern, missing_margin, missing_percent_pattern)
   check_percent_pattern(percent_pattern)
 
   if(!is.null(date_format)) funs_arg = c(funs_arg, list(date_format=date_format))
@@ -268,22 +247,22 @@ crosstable = function(data, cols=everything(), ..., by=NULL,
              call=current_env())
   }
 
-  na_cols = data_x %>% select(where(~all(is.na(.x)))) %>% names()
-  verbosity_na_cols = getOption("crosstable_verbosity_na_cols", "verbose")
-  if(length(na_cols)>0 && verbosity_na_cols=="verbose"){
-    cli_warn(c('Cannot describe column{?s} {.var {na_cols}} as {?it/they} contain{?s/} only missing values.'),
+  verbosity_na_cols = getOption("crosstable_verbosity_na_cols", "quiet")
+  na_cols_x = data_x %>% select(where(~all(is.na(.x) | is_blank(.x)))) %>% names()
+  if(length(na_cols_x)>0 && verbosity_na_cols=="verbose"){
+    cli_warn(c('Cannot describe column{?s} {.var {na_cols_x}} as {?it/they} contain{?s/} only missing values/blank.'),
              class = "crosstable_all_na_warning",
              call = crosstable_caller$env)
   }
 
-  na_cols_y = data_y %>% select(where(~all(is.na(.x)))) %>% names()
-  if(length(na_cols_y)>0 && verbosity_na_cols=="verbose"){
-    cli_warn(c('Cannot use {.var {na_cols_y}} as `by` column{?s} as {?it/they} contain{?s/} only missing values.'),
+  na_cols_y = data_y %>% select(where(~all(is.na(.x) | is_blank(.x)))) %>% names()
+  if(length(na_cols_y)>0){
+    cli_warn(c('Cannot use {.var {na_cols_y}} as `by` column{?s} as {?it/they} contain{?s/} only missing/blank values.'),
              class = "crosstable_all_na_by_warning",
              call = crosstable_caller$env)
   }
 
-  data_x = select(data_x, -any_of(c(duplicate_cols, na_cols)))
+  data_x = select(data_x, -any_of(c(duplicate_cols, na_cols_x)))
   data_y = select(data_y, -any_of(c(na_cols_y)))
   ncol_x = if(is.null(data_x)) 0 else ncol(data_x)
   ncol_y = if(is.null(data_y)) 0 else ncol(data_y)
@@ -413,6 +392,7 @@ crosstable = function(data, cols=everything(), ..., by=NULL,
   by_levels = map(data_y, ~{
     if(is.numeric(.x)) NULL
     else if(is.factor(.x) && anyNA(.x)) levels(fct_na_value_to_level(.x, "NA"))
+    else if(is.factor(.x)) levels(.x)
     else sort(unique(as.character(.x)), na.last=TRUE)
   })
   if(showNA=="no") by_levels = map(by_levels, ~.x[!is.na(.x)])
@@ -430,7 +410,9 @@ crosstable = function(data, cols=everything(), ..., by=NULL,
     rtn = cross_by(data_x=data_x, data_y=data_y2, funs=funs, funs_arg=funs_arg,
                    percent_pattern=percent_pattern, total=total,
                    percent_digits=percent_digits, showNA=showNA, drop_levels=drop_levels,
-                   cor_method=cor_method, times=times, followup=followup, test=test, test_args=test_args,
+                   remove_zero_percent=remove_zero_percent,
+                   cor_method=cor_method, times=times, followup=followup,
+                   test=test, test_args=test_args,
                    effect=effect, effect_args=effect_args, label=label)
 
     class(rtn) = c("crosstable_multiby", "crosstable", "tbl_df", "tbl", "data.frame")
@@ -440,6 +422,7 @@ crosstable = function(data, cols=everything(), ..., by=NULL,
     rtn = cross_by(data_x=data_x, data_y=data_y, funs=funs, funs_arg=funs_arg,
                    percent_pattern=percent_pattern, percent_digits=percent_digits,
                    total=total, showNA=showNA, drop_levels=drop_levels,
+                   remove_zero_percent=remove_zero_percent,
                    cor_method=cor_method, times=times, followup=followup, test=test, test_args=test_args,
                    effect=effect, effect_args=effect_args, label=label)
     class(rtn) = c("crosstable", "tbl_df", "tbl", "data.frame")
