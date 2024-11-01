@@ -1,6 +1,6 @@
 Package: crosstable
 Title: Crosstables for Descriptive Analyses
-Version: 0.8.0
+Version: 0.8.1
 Authors@R: 
     c(person(given = "Dan",
              family = "Chaltiel",
@@ -35,9 +35,9 @@ Config/testthat/edition: 3
 Config/testthat/parallel: true
 Config/testthat/start-first: by_factor , effects, officer
 NeedsCompilation: no
-Packaged: 2024-09-30 15:41:36 UTC; Dan
+Packaged: 2024-11-01 10:05:01 UTC; Dan
 Author: Dan Chaltiel [aut, cre] (<https://orcid.org/0000-0003-3488-779X>),
   David Hajage [ccp]
 Maintainer: Dan Chaltiel <dan.chaltiel@gmail.com>
 Repository: CRAN
-Date/Publication: 2024-09-30 21:00:02 UTC
+Date/Publication: 2024-11-01 10:30:03 UTC
