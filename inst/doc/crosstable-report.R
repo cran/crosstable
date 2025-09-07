@@ -58,5 +58,5 @@ if(file.exists("../examples")){
 }
 
 ## ----print, eval=FALSE----------------------------------------------------------------------------
-#  write_and_open(doc, "vignette_officer.docx")
+# write_and_open(doc, "vignette_officer.docx")
 

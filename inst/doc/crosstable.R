@@ -73,7 +73,7 @@ crosstable(mtcars3, c(am, cyl), by=vs, showNA="always",
   as_flextable(keep_id=TRUE)
 
 ## ----crosstable-functions-------------------------------------------------------------------------
-crosstable(mtcars2, c(mpg, wt), funs=c(median, mean, "std dev"=sd)) %>% 
+crosstable(mtcars2, c(mpg, wt), funs=c("mean"=mean, "std dev"=sd, q1=~quantile(.x, prob=0.25))) %>% 
   as_flextable(keep_id=TRUE)
 
 ## ----crosstable-correlation-----------------------------------------------------------------------

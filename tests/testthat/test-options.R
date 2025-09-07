@@ -12,16 +12,16 @@ test_that("No missing options", {
   skip_if(!dir.exists(path))
 
   ignored = c(
-    "rec_sep", "rec_max_length", #internal, unused yet
+    "rec_sep", "rec_max_length", "ct_label_recursion_max", #internal, unused yet
     "crosstable_...", "crosstable_.local", "crosstable_reset"
   )
 
   missing_options = missing_options_helper(path=path, ignore=ignored)
 
   #missing options, not handled in crosstable_options()
-  missing_options$not_handled %>% expect_length(0)
+  missing_options$not_handled %>% expect_identical(character(0))
   # added options, handled in crosstable_options() but never used in the code
-  missing_options$not_used %>% expect_length(0)
+  missing_options$not_used %>% expect_identical(character(0))
 })
 
 
@@ -101,6 +101,24 @@ test_that("All options work", {
   )
   ct_opt = crosstable(mtcars3, c(cyl, carb, qsec_posix, surv), by=vs, test=TRUE, effect=TRUE) %>%
     suppressWarnings()
+  
+  if (getRversion() >= "4.6") {
+    valR4.5 = "p value: 0.0001 \n(Wilcoxon rank sum test)"
+    valR4.6 = "p value: 0.0001 \n(Wilcoxon rank sum exact test)"
+    if (any(ct_noopt$test[5:8] != valR4.6)) {
+      stop("Error in wilcoxon exact test in R>4.6")
+    }
+    ct_noopt$test[5:8] = valR4.5
+
+    
+    valR4.5 = "p value: <0.1 \n(Wilcoxon rank sum test)"
+    valR4.6 = "p value: <0.1 \n(Wilcoxon rank sum exact test)"
+    if (ct_opt$test[6] != valR4.6) {
+      stop("Error in wilcoxon exact test in R>4.6")
+    }
+    ct_opt$test[6] = valR4.5
+  }
+  
   expect_snapshot({
     as.data.frame(ct_noopt)
     as.data.frame(ct_opt)

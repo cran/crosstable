@@ -34,6 +34,12 @@
 #' get_label(list(foo=xx$cyl, bar=xx$mpg))  #default to names
 #' get_label(list(foo=xx$cyl, bar=xx$mpg), default="Default value")
 get_label = function(x, default=names(x), object=FALSE, simplify=TRUE){
+  labels_env$recurs = labels_env$recurs + 1
+  if(labels_env$recurs>getOption("ct_label_recursion_max", 1000)) {
+    labels_env$recurs = 0
+    return("RecursionError")
+  }
+  if(inherits(x, "POSIXlt")) x = as.POSIXct(x)
   if(is.list(x) && !object){
     if(is.null(default)) default=rep(NA, length(x))
     if(length(default)>1 && length(x)!=length(default)) {
@@ -43,6 +49,7 @@ get_label = function(x, default=names(x), object=FALSE, simplify=TRUE){
     lab = x %>%
       map(get_label) %>%
       map2(default, ~{if(is.null(.x)) .y else .x})
+    labels_env$recurs = 0
     if(simplify) lab = unlist(lab)
   } else {
     lab = attr(x, "label", exact=TRUE)
@@ -234,7 +241,8 @@ clean_names_with_labels = function(df, except=NULL, .fun=getOption("crosstable_c
 #' This function is a copycat of from expss package v0.10.7 (slightly modified) to avoid having to depend on expss. See [expss::apply_labels()] for more documentation. Note that this version is not compatible with `data.table`.
 #'
 #' @param data data.frame/list
-#' @param ... named arguments
+#' @param ... named arguments, as `colname="label"`
+#' @param fn alternatively, a function to be applied to all existing labels.
 #' @param warn_missing if TRUE, throw a warning if some names are missing
 #'
 #' @return An object of the same type as `data`, with labels
@@ -249,18 +257,30 @@ clean_names_with_labels = function(df, except=NULL, .fun=getOption("crosstable_c
 #'   apply_labels(Sepal.Length="Length of Sepal",
 #'                Sepal.Width="Width of Sepal") %>%
 #'   crosstable()
-apply_labels = function(data, ..., warn_missing=FALSE) {
-  args = lst(...)
-  unknowns = setdiff(names(args), names(data))
-  if (length(unknowns) && warn_missing) {
-    cli_warn("Cannot apply a label to unknown column{?s} in `data`: {.var {unknowns}}",
-             class="crosstable_missing_label_warning",
-             call=current_env())
-  }
+#' iris2 %>%
+#'   apply_labels(fn=tolower) %>%
+#'   crosstable()
+apply_labels = function(data, ..., fn, warn_missing=FALSE) {
+  if(!missing(fn)){
+    check_dots_empty()
+    fn = as_function(fn)
+    rtn = data %>%
+      mutate(across(everything(),
+                    ~set_label(.x, fn(get_label(.x)))))
+  } else {
+    args = lst(...)
+    unknowns = setdiff(names(args), names(data))
+    if (length(unknowns) && warn_missing) {
+      cli_warn("Cannot find following column{?s} in `data`: {.var {unknowns}}",
+               class="crosstable_missing_label_warning",
+               call=current_env())
+    }
 
-  data %>%
-    mutate(across(everything(),
-                  ~set_label(.x, args[[cur_column()]])))
+    rtn = data %>%
+      mutate(across(everything(),
+                    ~set_label(.x, args[[cur_column()]])))
+  }
+  rtn
 }
 
 
@@ -385,6 +405,7 @@ save_labels = function(.tbl){
 
 # labels_env = rlang::new_environment()
 labels_env = rlang::env()
+labels_env$recurs = 0
 
 #' @keywords internal
 #' @noRd
