@@ -131,7 +131,7 @@ get_defined_function = function(name){
 #' @importFrom glue glue_collapse
 #' @importFrom purrr map pmap_chr
 #' @importFrom rlang have_name is_formula
-#' @importFrom stringr str_squish str_starts str_subset
+#' @importFrom stringr str_remove_all str_squish str_starts str_subset
 #' @keywords internal
 #' @noRd
 parse_funs = function(funs){
@@ -339,6 +339,10 @@ check_percent_pattern = function(percent_pattern){
 
 #' @keywords internal
 #' @noRd
+#' @importFrom cli cli_abort cli_warn
+#' @importFrom glue glue
+#' @importFrom rlang current_env
+#' @importFrom utils modifyList
 validate_percent_pattern = function(margin, percent_pattern,
                                     missing_margin, missing_percent_pattern) {
   if(missing_margin) margin = getOption("crosstable_margin")
@@ -431,12 +435,10 @@ attributes_from = function(x, y, replace=FALSE, verbose=FALSE){
 #' @importFrom stats sd
 #'
 #' @examples
-#' x_date = as.Date(mtcars2$hp , origin="2010-01-01") %>% set_label("Date")
-#' x_posix = as.POSIXct(mtcars2$qsec*3600*24 , origin="2010-01-01") %>% set_label("Date+time")
-#' sd_date(x_date)
-#' sd_date(as.POSIXct(x_date))
-#' sd_date(x_date, date_unit="days")
-#' sd_date(x_posix)
+#' sd_date(mtcars2$hp_date)
+#' sd_date(as.POSIXct(mtcars2$hp_date))
+#' sd_date(mtcars2$hp_date, date_unit="days")
+#' sd_date(mtcars2$qsec_posix)
 sd_date = function(x, date_unit=c("auto", "seconds", "minutes", "hours", "days", "months", "years")){
   assert(is.date(x))
   unit=match.arg(date_unit)
@@ -622,12 +624,20 @@ get_generic_labels = function(l=list()){
 #' Rework when https://github.com/r-lib/cli/issues/229 is merged
 #' @keywords internal
 #' @importFrom cli ansi_strip
-#' @importFrom stringr str_replace
 #' @noRd
 ansi_align_by = function(text, pattern){
   pos = gregexpr(pattern, ansi_strip(text)) %>% unlist()
   spaces = strrep("\u00a0", max(pos)-pos)
   stringr::str_replace(text, pattern, paste0(spaces, pattern))
+}
+
+#' @importFrom forcats fct_drop
+#' @keywords internal
+#' @noRd
+drop_na_level = function(x){
+  if(!is.factor(x)) return(x)
+  x[x=="NA"] = NA
+  fct_drop(x, only="NA")
 }
 
 
@@ -645,8 +655,9 @@ cl = function(...){
 #' Wrapper around forcats::fct_recode and dplyr::recode
 #' Syntax: "New"="Old"
 #'
+#' @importFrom dplyr intersect recode
 #' @importFrom forcats fct_recode
-#' @importFrom rlang dots_list
+#' @importFrom rlang dots_list set_names
 #' @keywords internal
 #' @noRd
 recode_any = function(x, ...){
@@ -741,7 +752,6 @@ mixedsort = function(x, decreasing=FALSE, na.last=TRUE, blank.last=FALSE,
 #' @noRd
 #' @source https://github.com/tidyverse/dplyr/issues/5563#issuecomment-721769342
 #' @importFrom dplyr across
-#' @importFrom tidyr unpack
 across_unpack = function(...) {
   out = across(...)
   tidyr::unpack(out, names(out), names_sep = "_")
@@ -758,4 +768,11 @@ as.data.frame.table = function(...) {
 #' @importFrom rlang is_formula
 is_one_sided = function(x) {
   is_formula(x) && length(x) == 2
+}
+
+#' @keywords internal
+#' @noRd
+#' @source vctrs
+`%0%` = function(x, y) {
+  if(length(x)==0) y else x
 }

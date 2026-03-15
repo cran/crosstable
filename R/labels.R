@@ -75,7 +75,7 @@ get_label = function(x, default=names(x), object=FALSE, simplify=TRUE){
 #' @importFrom cli cli_abort
 #' @importFrom dplyr intersect
 #' @importFrom purrr map_chr
-#' @importFrom rlang as_function is_named is_formula is_function
+#' @importFrom rlang as_function is_formula is_function is_named
 #' @seealso [get_label()], [import_labels()], [remove_label()]
 #' @examples
 #' library(dplyr)
@@ -166,30 +166,27 @@ remove_label = remove_labels
 #' Rename every column of a dataframe with its label
 #'
 #' @param df a data.frame
-#' @param except <[`tidy-select`][tidyselect::language]> columns that should not be renamed.
+#' @param cols <[`tidy-select`][tidyselect::language]> columns to be renamed.
+#' @param except <[`tidy-select`][tidyselect::language]> columns not be renamed. Deprecated in favor of `cols`.
 #'
 #' @return A dataframe which names are copied from the label attribute
 #'
 #' @importFrom checkmate assert_data_frame
-#' @importFrom dplyr rename_with select
-#' @importFrom rlang enexpr as_string
-#' @author Dan Chaltiel
+#' @importFrom dplyr all_of everything rename_with select
+#' @importFrom rlang enquo
 #' @export
-#' @source https://stackoverflow.com/q/75848408/3888000
 #'
 #' @examples
-#' rename_with_labels(mtcars2[,1:5], except=5) %>% names()
-#' rename_with_labels(iris2, except=Sepal.Length) %>% names()
-#' rename_with_labels(iris2, except=starts_with("Pet")) %>% names()
-rename_with_labels = function(df, except=NULL){
+#' rename_with_labels(mtcars2[,1:5], cols=1:4) %>% names()
+#' rename_with_labels(iris2, cols=-c(Sepal.Length, Sepal.Width)) %>% names()
+rename_with_labels = function(df, cols=everything(), except=NULL){
   if(is.null(df)) return(NULL)
   assert_data_frame(df)
-  except = enexpr(except)
-  if((!is.numeric(except)) && length(as.list(except))== 1){
-    except = as_string(except)
-  }
-  nm = setdiff(names(df), names(select(df, any_of({{except}}))))
-  rename_with(df, ~get_label(df)[.x], all_of(nm))
+
+  cols_in = df %>% select({{cols}}) %>% names()
+  cols_out = tidyselect::eval_select(enquo(except), df, strict=FALSE) %>% names()
+
+  rename_with(df, ~get_label(df)[.x], .cols=c(all_of(cols_in), -all_of(cols_out)))
 }
 
 #' @export
@@ -248,7 +245,9 @@ clean_names_with_labels = function(df, except=NULL, .fun=getOption("crosstable_c
 #' @return An object of the same type as `data`, with labels
 #'
 #' @importFrom cli cli_warn
-#' @importFrom rlang current_env
+#' @importFrom dplyr across cur_column everything mutate
+#' @importFrom rlang as_function check_dots_empty current_env
+#' @importFrom tibble lst
 #' @author Dan Chaltiel
 #' @export
 #'
@@ -301,7 +300,7 @@ apply_labels = function(data, ..., fn, warn_missing=FALSE) {
 #' @author Dan Chaltiel
 #' @export
 #' @importFrom cli cli_abort cli_warn
-#' @importFrom dplyr all_of select
+#' @importFrom dplyr across all_of cur_column everything mutate select
 #' @importFrom lifecycle deprecate_warn deprecated is_present
 #' @importFrom rlang current_env
 #' @importFrom tibble column_to_rownames

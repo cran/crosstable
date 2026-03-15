@@ -1,6 +1,6 @@
 Package: crosstable
 Title: Crosstables for Descriptive Analyses
-Version: 0.8.2
+Version: 0.9.0
 Authors@R: 
     c(person(given = "Dan",
              family = "Chaltiel",
@@ -33,12 +33,12 @@ LazyData: true
 RoxygenNote: 7.3.2
 Config/testthat/edition: 3
 Config/testthat/parallel: true
-Config/testthat/start-first: by_factor , effects, officer
+Config/testthat/start-first: by_factor , effects_snap, officer
 NeedsCompilation: no
-Packaged: 2025-09-07 19:53:18 UTC; Dan
+Packaged: 2026-03-14 20:59:08 UTC; Dan
 Author: Dan Chaltiel [aut, cre] (ORCID:
     <https://orcid.org/0000-0003-3488-779X>),
   David Hajage [ccp]
 Maintainer: Dan Chaltiel <dan.chaltiel@gmail.com>
 Repository: CRAN
-Date/Publication: 2025-09-07 23:30:14 UTC
+Date/Publication: 2026-03-15 12:20:09 UTC

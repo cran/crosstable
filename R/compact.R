@@ -20,6 +20,8 @@ ct_compact = function(data, ...){
 #' @param name_to name of the column that will receive the collapsed column. Will be created if it doesn't exist.
 #' @param ... additional arguments (not used)
 #' @param id_from name of the columns to use as cut-off. Useful when successive `name_from` have the same value.
+#' @param collapse levels to collapse into one row.
+#' @param keep_id whether to keep `id_from` in the output.
 #' @param wrap_cols name of the columns to wrap
 #' @param rtn_flextable whether to return a formatted [flextable::flextable()] object or a simple `data.frame`
 #' @rdname ct_compact
@@ -27,9 +29,11 @@ ct_compact = function(data, ...){
 #' @author Dan Chaltiel
 #' @export
 #' @importFrom checkmate assert_scalar
-#' @importFrom dplyr across any_of everything lag mutate row_number select sym
+#' @importFrom dplyr across all_of any_of arrange bind_rows distinct everything filter if_else lag mutate n pull row_number select summarise
 #' @importFrom flextable align bold border
 #' @importFrom officer fp_border
+#' @importFrom rlang ensym set_names
+#' @importFrom stats na.omit
 #' @importFrom tidyr replace_na
 #'
 #' @return a compacted data.frame
@@ -43,28 +47,69 @@ ct_compact = function(data, ...){
 #' ct_compact(x, name_from="Species", wrap_cols="Species2")
 #' ct_compact(x, name_from="Species", id_from="Species2") #cut on "v"
 ct_compact.data.frame = function(data, name_from, name_to="variable", ...,
-                                 id_from=name_from,
+                                 id_from=name_from, keep_id=TRUE,
+                                 collapse=NULL,
                                  wrap_cols=NULL, rtn_flextable=FALSE){
   assert_scalar(name_from)
   assert_scalar(name_to)
   assert_scalar(id_from)
-  ifr = sym(id_from)
   id = (data[[id_from]]!=lag(data[[id_from]])) %>% replace_na(TRUE)
 
-  nf = sym(name_from)
-  nt = sym(name_to)
-  x = sort(c(seq(nrow(data)), which(id))) #duplicate rows
   if(is.null(data[[name_to]])) data[[name_to]] = ""
-  rtn = data[x,] %>%
+  remove_cols = c(name_from, id_from, "gp", "added")
+  if(isTRUE(keep_id)){
+    remove_cols = setdiff(remove_cols, id_from)
+  }
+
+  collapse_grp = NULL
+  if(!is.null(collapse) && !isFALSE(collapse)){
+    #collapse the group if only 2 levels exactly, one being in `collapse`
+    collapse_grp = data %>%
+      filter(
+        n()==2,
+        sum(!!ensym(name_to) %in% collapse)==1,
+        .by=all_of(id_from)
+      ) %>%
+      pull(all_of(id_from)) %>%
+      unique()
+  }
+
+  data[[name_to]] = as.character(data[[name_to]])
+  rtn =
+    data %>%
+    distinct(across(all_of(c(set_names(id_from, id_from),
+                             set_names(name_from, name_to))))) %>%
+    bind_rows(data, .id="added") %>%
+    arrange(factor(.data[[id_from]], levels=unique(data[[id_from]])), .data$added) %>%
+    select(any_of(c(id_from, name_to)), everything(),
+           -any_of(remove_cols)) %>%
     mutate(
-      across(everything(), as.character),
-      gp = row_number()==1 | !!ifr!=lag(!!ifr),
-      !!nt:=ifelse(.data$gp, !!nf, !!nt),
-      across(any_of(wrap_cols), ~ifelse(.data$gp, .x, "")),
-      across(-any_of(c(name_to, wrap_cols)), ~ifelse(.data$gp, "", .x)),
+      across(
+        -any_of(c(id_from, name_to)),
+        ~if_else(.data[[id_from]] %in% collapse_grp,
+                 .x[.data[[name_to]] %in% collapse] %0% NA, .x)
+      ),
+      across(all_of(wrap_cols), ~if_else(row_number()==1, na.omit(.x)[1], NA)),
+      .by=all_of(id_from)
     ) %>%
-    select(any_of(name_to), everything(), -any_of(c(name_from, id_from)), -"gp")
+    filter(!.data[[id_from]] %in% collapse_grp | row_number()==1,
+           .by=all_of(id_from))
   rownames(rtn) = NULL #resets row numbers
+
+  # if(TRUE){
+  #   x = sort(c(seq(nrow(data)), which(id))) #duplicate rows
+  #   nf = sym(name_from)
+  #   nt = sym(name_to)
+  #   rtn2 = data[x,] %>%
+  #     mutate(
+  #       across(everything(), as.character),
+  #       gp = row_number()==1 | !!ifr!=lag(!!ifr),
+  #       !!nt:=ifelse(.data$gp, !!nf, !!nt),
+  #       across(any_of(wrap_cols), ~ifelse(.data$gp, .x, "")),
+  #       across(-any_of(c(name_to, wrap_cols)), ~ifelse(.data$gp, "", .x)),
+  #     ) %>%
+  #     select(any_of(c(id_from, name_to)), everything(), -any_of(remove_cols))
+  # }
 
   if(rtn_flextable){
     id2 = which(id)+(0:(sum(id)-1))
@@ -81,11 +126,11 @@ ct_compact.data.frame = function(data, name_from, name_to="variable", ...,
 #' @description NULL
 #' @rdname ct_compact
 #'
-#' @param keep_id `glue` pattern to keep the column name along with the label. If `TRUE`, default to `"{label} ({.id})"`.
+#' @param label_with_id `glue` pattern to keep the column name along with the label. If `TRUE`, default to `"{label} ({.id})"`.
 #'
 #' @author Dan Chaltiel
 #' @export
-#' @importFrom dplyr any_of intersect mutate select
+#' @importFrom dplyr intersect mutate
 #' @importFrom glue glue
 #'
 #' @examples
@@ -94,20 +139,20 @@ ct_compact.data.frame = function(data, name_from, name_to="variable", ...,
 #' x=crosstable(mtcars2, c(disp,hp,am), by=vs, test=TRUE, effect=TRUE)
 #' ct_compact(x)
 #' ct_compact(x, name_from=".id")
-ct_compact.crosstable = function(data, name_from=c("label", ".id"), name_to="variable",
-                                 id_from=".id", keep_id=FALSE, ...){
+ct_compact.crosstable = function(data, name_from="label", name_to="variable",
+                                 id_from=".id", label_with_id=FALSE, keep_id=TRUE, ...){
   by_levels = attr(data, "by_levels")
   by = attr(data, "by")
-  name_from = match.arg(name_from)
   wrap_cols = intersect(names(data), c("test", "effect"))
   if(name_from=="label") rcol=".id" else rcol="label"
-  if(!isFALSE(keep_id)) {
-    if(isTRUE(keep_id)) keep_id = "{label} ({.id})"
-    data = data %>% mutate(label = glue(keep_id))
+  if(!isFALSE(label_with_id)) {
+    if(isTRUE(label_with_id)) label_with_id = "{label} ({.id})"
+    data = data %>% mutate(label = glue(label_with_id))
   }
+  # browser()
   rtn = data %>%
     ct_compact.data.frame(name_from=name_from, name_to=name_to, id_from=id_from,
-                          wrap_cols=wrap_cols, rtn_flextable=FALSE)
+                          wrap_cols=wrap_cols, keep_id=keep_id, rtn_flextable=FALSE, ...)
 
   new_attr_names = setdiff(names(attributes(data)), names(attributes(rtn)))
   attributes(rtn) = c(attributes(rtn), attributes(data)[new_attr_names])
@@ -127,49 +172,3 @@ ct_compact.default = function(data, ...) {
             class="ct_compact_notfound_error")
 }
 
-
-
-
-# Deprecated --------------------------------------------------------------
-
-
-#' @description NULL
-#' @rdname ct_compact
-#' @usage NULL
-#' @export
-compact = function(data, ...){
-  UseMethod("compact")
-}
-
-#' @description NULL
-#' @rdname ct_compact
-#' @usage NULL
-#' @export
-#' @importFrom lifecycle deprecate_warn
-compact.data.frame = function(data, ...){
-  deprecate_warn("0.5.0", "compact.data.frame()", "ct_compact.data.frame()", details="Or use purrr::compact()")
-  ct_compact.data.frame(data, ...)
-}
-
-#' @description NULL
-#' @rdname ct_compact
-#' @usage NULL
-#' @export
-#' @importFrom lifecycle deprecate_warn
-compact.crosstable = function(data, ...){
-  deprecate_warn("0.5.0", "compact.crosstable()", "ct_compact.crosstable()")
-  ct_compact.crosstable(data, ...)
-}
-
-#' @description NULL
-#' @rdname ct_compact
-#' @usage NULL
-#' @export
-#' @importFrom cli cli_abort
-compact.default = function(data, ...) {
-  fn=get_defined_function('compact')
-  if(is.null(fn) || is.null(fn[[1L]]))
-    cli_abort('could not find function "compact" for objects of class other than `crosstable` or `dataframe`',
-              class="compact_notfound_error")
-  fn[[1L]](data, ...)
-}

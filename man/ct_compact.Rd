@@ -5,10 +5,6 @@
 \alias{ct_compact.data.frame}
 \alias{ct_compact.crosstable}
 \alias{ct_compact.default}
-\alias{compact}
-\alias{compact.data.frame}
-\alias{compact.crosstable}
-\alias{compact.default}
 \title{Generic function to compact a table (publication formatting)}
 \usage{
 \method{ct_compact}{data.frame}(
@@ -17,16 +13,19 @@
   name_to = "variable",
   ...,
   id_from = name_from,
+  keep_id = TRUE,
+  collapse = NULL,
   wrap_cols = NULL,
   rtn_flextable = FALSE
 )
 
 \method{ct_compact}{crosstable}(
   data,
-  name_from = c("label", ".id"),
+  name_from = "label",
   name_to = "variable",
   id_from = ".id",
-  keep_id = FALSE,
+  label_with_id = FALSE,
+  keep_id = TRUE,
   ...
 )
 }
@@ -41,11 +40,15 @@
 
 \item{id_from}{name of the columns to use as cut-off. Useful when successive \code{name_from} have the same value.}
 
+\item{keep_id}{whether to keep \code{id_from} in the output.}
+
+\item{collapse}{levels to collapse into one row.}
+
 \item{wrap_cols}{name of the columns to wrap}
 
 \item{rtn_flextable}{whether to return a formatted \code{\link[flextable:flextable]{flextable::flextable()}} object or a simple \code{data.frame}}
 
-\item{keep_id}{\code{glue} pattern to keep the column name along with the label. If \code{TRUE}, default to \code{"{label} ({.id})"}.}
+\item{label_with_id}{\code{glue} pattern to keep the column name along with the label. If \code{TRUE}, default to \code{"{label} ({.id})"}.}
 }
 \value{
 a compacted data.frame

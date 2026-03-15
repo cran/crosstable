@@ -1,6 +1,36 @@
 Crosstables for descriptive analyses. See documentation at <https://danchaltiel.github.io/crosstable/> and browse code at <https://github.com/DanChaltiel/crosstable>.
 
 
+# crosstable 0.9.0
+
+#### New features 
+
+-   New function `body_add_flextable2()`: automatically adds a legend if the `flextable` object has a `"legend"` attribute. Equivalent functionality is now available in `body_add_gg2()`. (#100)
+-   New argument `rename_with_labels(cols)`, more intuitive than `except`. (#99)
+-   New function `ct_bind_cols()` helper to combine (column-bind) two multi-`by` crosstables into a wider crosstable, enabling multi-column outputs with intra-group margins (**experimental**). (#97)
+-   New argument `as_flextable(allow_breaks=FALSE)`, to avoid breaking a table group in 2 pages. (#92)
+-   New argument `as_flextable(compact=TRUE, collapse)`, to collapse levels in compact format. (#98)
+For example, `collapse="Yes"` will yield a single row for the "Yes" level, instead of a redundant Yes/No that sums up to 100%. This will only apply if there are 2 levels only, `NA` included. See examples for more.
+
+#### Documentation
+
+-   New vignette on advanced customization, demonstrating how to plug custom summary functions, effect estimators and statistical tests into `crosstable()`. (#112)
+-   New hex logo! (#115)
+
+#### Bug fixes and improvements
+
+-   Fixed `ct_compact()` so that `.id` is kept in the output.
+-   Improved `format_fixed()` for more reproducible output across platforms. This may result in minor rounding differences. (#114)
+-   Fixed bug in `rename_with_labels()` when `except` contains `c()`.(#99)
+-   Fixed bug in `crosstable()` when a factor variable had `NA` as a level (like after `forcats::fct_value_to_na_level()`). (#94)
+-   Fixed `as_flextable()` so that `compact=TRUE` works in transposed (`t()`) crosstables (#91).
+-   Fixed `as_flextable()` so that `keep_id=TRUE` works in multi-`by` crosstables (#88).
+
+#### Lifecycle
+
+-   `compact()`, conflicting with `purrr::compact()` and deprecated if favor of `ct_compact()` since 2022, has been removed from the package.
+
+
 # crosstable 0.8.2
 
 #### New features 
@@ -12,6 +42,7 @@ Crosstables for descriptive analyses. See documentation at <https://danchaltiel.
 -   fixed `crosstable_options()` sometimes not being taken into account (#90).
 -   fixed error when using a named list of functions in `crosstable(funs)` (#89).
 -   fixed rare infinite loop with `get_label()` on very specific objects like `POSIXlt` (#86).
+
 
 # crosstable 0.8.1
 

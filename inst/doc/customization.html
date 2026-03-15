@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Customization</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+<style type="text/css">.tabwid {
+font-size: initial;
+padding-bottom: 1em;
+}
+.tabwid table{
+border-spacing:0px !important;
+border-collapse:collapse;
+line-height:1;
+margin-left:auto;
+margin-right:auto;
+border-width: 0;
+border-color: transparent;
+caption-side: top;
+}
+.tabwid-caption-bottom table{
+caption-side: bottom;
+}
+.tabwid_left table{
+margin-left:0;
+}
+.tabwid_right table{
+margin-right:0;
+}
+.tabwid td, .tabwid th {
+padding: 0;
+}
+.tabwid a {
+text-decoration: none;
+}
+.tabwid thead {
+background-color: transparent;
+}
+.tabwid tfoot {
+background-color: transparent;
+}
+.tabwid table tr {
+background-color: transparent;
+}
+.katex-display {
+margin: 0 0 !important;
+}
+</style>
+<script>document.addEventListener("DOMContentLoaded", function(event) {
+  var els = document.querySelectorAll(".tabwid");
+  var tabwid_link = document.querySelector('link[href*="tabwid.css"]')
+  if (tabwid_link === null) {
+    const tabwid_styles = document.evaluate("//style[contains(., 'tabwid')]", document, null, XPathResult.ANY_TYPE, null );
+    tabwid_link = tabwid_styles.iterateNext();
+  }
+
+  Array.prototype.forEach.call(els, function(template) {
+      const dest = document.createElement("div");
+      template.parentNode.insertBefore(dest, template.nextSibling)
+      dest.setAttribute("class", "flextable-shadow-host");
+      const fantome = dest.attachShadow({mode: 'open'});
+      fantome.appendChild(template);
+      if (tabwid_link !== null) {
+        fantome.appendChild(tabwid_link.cloneNode(true));
+      }
+  });
+
+  const shadowHosts = document.querySelectorAll('.flextable-shadow-host:not(:has(div > table.no-shadow-dom))');
+  shadowHosts.forEach(host => {
+    if (host.shadowRoot) {
+      const spanElements = host.shadowRoot.querySelector('div > table > caption > span[id]');
+      if (spanElements) {
+        const id = spanElements.getAttribute("id");
+        host.setAttribute("id", id);
+      }
+    }
+  });
+
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Customization</h1>
+
+
+
+<p><code>crosstable</code> provides a high level of customization. While
+the available options may not be immediately intuitive at first, they
+allow fine control over how summaries and effects are computed and
+displayed.</p>
+<p>Before exploring these options, we start by loading the package and
+setting a few convenient defaults.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(crosstable)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">crosstable_options</span>(<span class="at">compact=</span><span class="cn">TRUE</span>, <span class="at">keep_id=</span><span class="cn">TRUE</span>)</span></code></pre></div>
+<p>Customization in <code>crosstable</code> mainly happens at three
+levels:</p>
+<ul>
+<li>how numerical variables are summarized (<code>funs</code>)</li>
+<li>how group effects are computed (<code>effect_args</code>)</li>
+<li>how statistical tests are computed (<code>test_args</code>)</li>
+</ul>
+<p>Summary functions (<code>funs</code>) describe each group separately,
+whereas <code>effect_args</code> and <code>test_args</code> control how
+groups are compared. <code>effect_args</code> controls the estimated
+effect size and confidence interval, whereas <code>test_args</code>
+controls the hypothesis test and p-value.</p>
+<div id="numeric-variables-the-funs-argument" class="section level2">
+<h2>Numeric variables: the <code>funs</code> argument</h2>
+<p>Numeric variables are summarized using a set of summary functions. By
+default, <code>crosstable</code> reports: <code>min/max</code>,
+<code>median/IQR</code>, <code>mean/sd</code> and
+<code>number of observations/missing</code>. These summaries are
+generated by the internal function <code>cross_summary()</code>.</p>
+<p>These summaries can be customized depending on how you want numeric
+variables to be reported.</p>
+<p>In practice, you will often want all numeric variables to be
+summarized in the same way.<br />
+For this reason, it is convenient to define <code>funs</code> globally
+with <code>crosstable_options()</code>, although you can also pass it
+directly to <code>crosstable()</code>.</p>
+<p>The first possibility is to use a named list of functions. If a
+function returns multiple values (as with <code>quantile()</code>), the
+names of the returned statistics are automatically combined.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">crosstable_options</span>(<span class="at">funs=</span><span class="fu">c</span>(<span class="st">&quot;mean&quot;</span><span class="ot">=</span>mean, <span class="st">&quot;std dev&quot;</span><span class="ot">=</span>sd, <span class="at">qtl=</span><span class="sc">~</span><span class="fu">quantile</span>(.x, <span class="at">prob=</span><span class="fu">c</span>(<span class="fl">0.25</span>, <span class="fl">0.75</span>))))</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="fu">crosstable</span>(mtcars2, mpg) <span class="sc">%&gt;%</span> <span class="fu">as_flextable</span>()</span></code></pre></div>
+<div class="tabwid"><style>.cl-9dfebe68{table-layout:auto;}.cl-9df7a556{font-family:'Arial';font-size:11pt;font-weight:bold;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-9df7a560{font-family:'Arial';font-size:11pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-9df7a561{font-family:'Arial';font-size:8pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-9dfa117e{margin:0;text-align:center;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9dfa1188{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:0;padding-top:0;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9dfa1189{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:0;padding-top:0;padding-left:25pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9dfa1192{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:0;padding-top:0;padding-left:25pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9dfa1193{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:0;padding-top:0;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9dfa266e{background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(0, 0, 0, 1.00);border-top: 1.5pt solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-9dfa2678{background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 1pt solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-9dfa2679{background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-9dfa2682{background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}</style><table data-quarto-disable-processing="true" class="cl-9dfebe68"><thead><tr style="overflow-wrap:break-word;"><th class="cl-9dfa266e"><p class="cl-9dfa117e"><span class="cl-9df7a556"></span></p></th><th class="cl-9dfa266e"><p class="cl-9dfa117e"><span class="cl-9df7a556">value</span></p></th></tr></thead><tbody><tr style="overflow-wrap:break-word;"><td class="cl-9dfa2678"><p class="cl-9dfa1188"><span class="cl-9df7a556">Miles/(US) gallon (mpg)</span></p></td><td class="cl-9dfa2678"><p class="cl-9dfa1188"><span class="cl-9df7a560"></span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-9dfa2679"><p class="cl-9dfa1189"><span class="cl-9df7a561">mean</span></p></td><td class="cl-9dfa2679"><p class="cl-9dfa1188"><span class="cl-9df7a561">20.1</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-9dfa2679"><p class="cl-9dfa1189"><span class="cl-9df7a561">std dev</span></p></td><td class="cl-9dfa2679"><p class="cl-9dfa1188"><span class="cl-9df7a561">6.0</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-9dfa2679"><p class="cl-9dfa1189"><span class="cl-9df7a561">qtl 25%</span></p></td><td class="cl-9dfa2679"><p class="cl-9dfa1188"><span class="cl-9df7a561">15.4</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-9dfa2682"><p class="cl-9dfa1192"><span class="cl-9df7a561">qtl 75%</span></p></td><td class="cl-9dfa2682"><p class="cl-9dfa1193"><span class="cl-9df7a561">22.8</span></p></td></tr></tbody></table></div>
+<p>Another option is to provide a custom summary function that returns
+several statistics at once. In this case, you should give the function
+an empty name (<code>&quot; &quot;</code>) so that its internal labels are used
+directly.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>f <span class="ot">=</span> <span class="cf">function</span>(x) <span class="fu">c</span>(<span class="st">&quot;Mean (SD)&quot;</span><span class="ot">=</span><span class="fu">meansd</span>(x), <span class="st">&quot;Med [IQR]&quot;</span><span class="ot">=</span><span class="fu">mediqr</span>(x))</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">crosstable</span>(mtcars2, wt, <span class="at">funs=</span>f) <span class="sc">%&gt;%</span> <span class="fu">as_flextable</span>()</span></code></pre></div>
+<div class="tabwid"><style>.cl-9e131c0a{table-layout:auto;}.cl-9e0c8606{font-family:'Arial';font-size:11pt;font-weight:bold;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-9e0c8610{font-family:'Arial';font-size:11pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-9e0c861a{font-family:'Arial';font-size:8pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-9e0f15b0{margin:0;text-align:center;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9e0f15ba{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:0;padding-top:0;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9e0f15bb{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:0;padding-top:0;padding-left:25pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9e0f15c4{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:0;padding-top:0;padding-left:25pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9e0f15c5{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:0;padding-top:0;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9e0f2aa0{background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(0, 0, 0, 1.00);border-top: 1.5pt solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-9e0f2aa1{background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 1pt solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-9e0f2aaa{background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-9e0f2aab{background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}</style><table data-quarto-disable-processing="true" class="cl-9e131c0a"><thead><tr style="overflow-wrap:break-word;"><th class="cl-9e0f2aa0"><p class="cl-9e0f15b0"><span class="cl-9e0c8606"></span></p></th><th class="cl-9e0f2aa0"><p class="cl-9e0f15b0"><span class="cl-9e0c8606">value</span></p></th></tr></thead><tbody><tr style="overflow-wrap:break-word;"><td class="cl-9e0f2aa1"><p class="cl-9e0f15ba"><span class="cl-9e0c8606">Weight (1000 lbs) (wt)</span></p></td><td class="cl-9e0f2aa1"><p class="cl-9e0f15ba"><span class="cl-9e0c8610"></span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-9e0f2aaa"><p class="cl-9e0f15bb"><span class="cl-9e0c861a">f Mean (SD)</span></p></td><td class="cl-9e0f2aaa"><p class="cl-9e0f15ba"><span class="cl-9e0c861a">3.22 (0.98)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-9e0f2aab"><p class="cl-9e0f15c4"><span class="cl-9e0c861a">f Med [IQR]</span></p></td><td class="cl-9e0f2aab"><p class="cl-9e0f15c5"><span class="cl-9e0c861a">3.33 [2.58;3.61]</span></p></td></tr></tbody></table></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">crosstable</span>(mtcars2, wt, <span class="at">funs=</span><span class="fu">c</span>(<span class="st">&quot; &quot;</span><span class="ot">=</span>f)) <span class="sc">%&gt;%</span> <span class="fu">as_flextable</span>()</span></code></pre></div>
+<div class="tabwid"><style>.cl-9e21a522{table-layout:auto;}.cl-9e1b3d9a{font-family:'Arial';font-size:11pt;font-weight:bold;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-9e1b3da4{font-family:'Arial';font-size:11pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-9e1b3da5{font-family:'Arial';font-size:8pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-9e1daa9e{margin:0;text-align:center;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9e1daaa8{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:0;padding-top:0;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9e1daaa9{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:0;padding-top:0;padding-left:25pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9e1daaaa{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:0;padding-top:0;padding-left:25pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9e1daab2{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:0;padding-top:0;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9e1dbebc{background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(0, 0, 0, 1.00);border-top: 1.5pt solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-9e1dbebd{background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 1pt solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-9e1dbed0{background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-9e1dbed1{background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}</style><table data-quarto-disable-processing="true" class="cl-9e21a522"><thead><tr style="overflow-wrap:break-word;"><th class="cl-9e1dbebc"><p class="cl-9e1daa9e"><span class="cl-9e1b3d9a"></span></p></th><th class="cl-9e1dbebc"><p class="cl-9e1daa9e"><span class="cl-9e1b3d9a">value</span></p></th></tr></thead><tbody><tr style="overflow-wrap:break-word;"><td class="cl-9e1dbebd"><p class="cl-9e1daaa8"><span class="cl-9e1b3d9a">Weight (1000 lbs) (wt)</span></p></td><td class="cl-9e1dbebd"><p class="cl-9e1daaa8"><span class="cl-9e1b3da4"></span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-9e1dbed0"><p class="cl-9e1daaa9"><span class="cl-9e1b3da5">Mean (SD)</span></p></td><td class="cl-9e1dbed0"><p class="cl-9e1daaa8"><span class="cl-9e1b3da5">3.22 (0.98)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-9e1dbed1"><p class="cl-9e1daaaa"><span class="cl-9e1b3da5">Med [IQR]</span></p></td><td class="cl-9e1dbed1"><p class="cl-9e1daab2"><span class="cl-9e1b3da5">3.33 [2.58;3.61]</span></p></td></tr></tbody></table></div>
+<p>To this end, crosstable exports convenience functions:
+<code>meansd()</code>, <code>meanCI()</code>, <code>mediqr()</code>,
+<code>minmax()</code>, and <code>nna()</code>.</p>
+</div>
+<div id="calculating-effects" class="section level2">
+<h2>Calculating effects</h2>
+<p>When <code>effect = TRUE</code>, <code>crosstable</code> computes an
+effect comparing the levels of the <code>by</code> variable.</p>
+<p>Effect calculation is controlled by the <code>effect_args</code>
+argument, which defaults to the result of
+<code>crosstable_effect_args()</code>.</p>
+<p>The function used for actual calculation depends on the type of
+variable being analyzed:</p>
+<ul>
+<li><code>effect_summarize</code> for numeric variables</li>
+<li><code>effect_tabular</code> for categorical variables</li>
+<li><code>effect_survival</code> for survival outcomes</li>
+</ul>
+<p>By default, <code>effect_tabular</code> is set to
+<code>effect_odds_ratio()</code>, which computes an odds ratio for
+categorical variables.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>mtcars2 <span class="sc">%&gt;%</span> </span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  <span class="fu">crosstable</span>(am, <span class="at">by=</span>vs, <span class="at">effect=</span><span class="cn">TRUE</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  <span class="fu">as_flextable</span>()</span></code></pre></div>
+<div class="tabwid"><style>.cl-9e40b0f2{table-layout:auto;}.cl-9e38cab8{font-family:'Arial';font-size:11pt;font-weight:bold;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-9e38cac2{font-family:'Arial';font-size:11pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-9e38cacc{font-family:'Arial';font-size:8pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-9e3c9274{margin:0;text-align:center;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9e3c927e{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:0;padding-top:0;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9e3c927f{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:0;padding-top:0;padding-left:25pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9e3c9288{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:0;padding-top:0;padding-left:25pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9e3c9292{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:0;padding-top:0;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9e3ca944{background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(0, 0, 0, 1.00);border-top: 1.5pt solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(255, 255, 255, 0.00);border-right: 0 solid rgba(255, 255, 255, 0.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-9e3ca94e{background-color:transparent;vertical-align: middle;border-bottom: 1pt solid rgba(0, 0, 0, 1.00);border-top: 1.5pt solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(255, 255, 255, 0.00);border-right: 0 solid rgba(255, 255, 255, 0.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-9e3ca94f{background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(0, 0, 0, 1.00);border-top: 1pt solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(255, 255, 255, 0.00);border-right: 0 solid rgba(255, 255, 255, 0.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-9e3ca958{background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 1pt solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-9e3ca959{background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-9e3ca95a{background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}</style><table data-quarto-disable-processing="true" class="cl-9e40b0f2"><thead><tr style="overflow-wrap:break-word;"><th rowspan="2" class="cl-9e3ca944"><p class="cl-9e3c9274"><span class="cl-9e38cab8"></span></p></th><th colspan="2" class="cl-9e3ca94e"><p class="cl-9e3c9274"><span class="cl-9e38cab8">Engine</span></p></th><th rowspan="2" class="cl-9e3ca944"><p class="cl-9e3c9274"><span class="cl-9e38cab8">effect</span></p></th></tr><tr style="overflow-wrap:break-word;"><th class="cl-9e3ca94f"><p class="cl-9e3c9274"><span class="cl-9e38cab8">straight</span></p></th><th class="cl-9e3ca94f"><p class="cl-9e3c9274"><span class="cl-9e38cab8">vshaped</span></p></th></tr></thead><tbody><tr style="overflow-wrap:break-word;"><td class="cl-9e3ca958"><p class="cl-9e3c927e"><span class="cl-9e38cab8">Transmission (am)</span></p></td><td class="cl-9e3ca958"><p class="cl-9e3c927e"><span class="cl-9e38cac2"></span></p></td><td class="cl-9e3ca958"><p class="cl-9e3c927e"><span class="cl-9e38cac2"></span></p></td><td class="cl-9e3ca958"><p class="cl-9e3c927e"><span class="cl-9e38cac2">Odds ratio [95% Wald CI], ref=&#39;vshaped vs straight&#39;</span><br><span class="cl-9e38cac2">manual vs auto: 0.50 [0.11 to 2.08]</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-9e3ca959"><p class="cl-9e3c927f"><span class="cl-9e38cacc">auto</span></p></td><td class="cl-9e3ca959"><p class="cl-9e3c927e"><span class="cl-9e38cacc">7 (36.84%)</span></p></td><td class="cl-9e3ca959"><p class="cl-9e3c927e"><span class="cl-9e38cacc">12 (63.16%)</span></p></td><td class="cl-9e3ca959"><p class="cl-9e3c927e"><span class="cl-9e38cacc"></span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-9e3ca95a"><p class="cl-9e3c9288"><span class="cl-9e38cacc">manual</span></p></td><td class="cl-9e3ca95a"><p class="cl-9e3c9292"><span class="cl-9e38cacc">7 (53.85%)</span></p></td><td class="cl-9e3ca95a"><p class="cl-9e3c9292"><span class="cl-9e38cacc">6 (46.15%)</span></p></td><td class="cl-9e3ca95a"><p class="cl-9e3c9292"><span class="cl-9e38cacc"></span></p></td></tr></tbody></table></div>
+<p>Suppose that instead of an odds ratio, you want to compute a
+<strong>difference in proportions</strong>.</p>
+<p>To define a custom categorical effect, you need to write a function
+that takes:</p>
+<ul>
+<li><code>x</code>: the variable being summarized</li>
+<li><code>by</code>: the grouping variable</li>
+<li><code>conf.level</code>: the confidence level</li>
+</ul>
+<p>and returns a list with the following elements:</p>
+<ul>
+<li><code>summary</code>: a data frame containing the effect label,
+estimate, and confidence interval.<br />
+It can contain several rows if <code>x</code> has more than two
+levels.</li>
+<li><code>effect.type</code>: the name of the effect being computed</li>
+<li><code>ref</code>: the reference level or comparison label</li>
+</ul>
+<p>The following example computes a difference in proportions and uses
+<code>prop.test()</code> to derive the confidence interval.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>ct_effect_prop_diff <span class="ot">=</span> <span class="cf">function</span>(x, by, conf.level){</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>  tb <span class="ot">=</span> <span class="fu">table</span>(x, by) </span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>  test <span class="ot">=</span> <span class="fu">prop.test</span>(tb, <span class="at">conf.level=</span>conf.level)</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  nms <span class="ot">=</span> <span class="fu">dimnames</span>(tb)[[<span class="st">&quot;x&quot;</span>]] </span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>  effect <span class="ot">=</span> <span class="fu">diff</span>(test<span class="sc">$</span>estimate)</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>  effect.type <span class="ot">=</span> <span class="st">&quot;Difference of proportions&quot;</span></span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>  reference <span class="ot">=</span> glue<span class="sc">::</span><span class="fu">glue</span>(<span class="st">&quot;, {nms[1]} vs {nms[2]}&quot;</span>)</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>  summary <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">name =</span> <span class="st">&quot;Proportion difference&quot;</span>, effect, </span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>                       <span class="at">ci_inf =</span> test<span class="sc">$</span>conf.int[<span class="dv">1</span>], </span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>                       <span class="at">ci_sup =</span> test<span class="sc">$</span>conf.int[<span class="dv">2</span>])</span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">summary =</span> summary, <span class="at">ref =</span> reference, <span class="at">effect.type =</span> effect.type)</span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>}</span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>my_effect_args <span class="ot">=</span> <span class="fu">crosstable_effect_args</span>(<span class="at">effect_tabular=</span>ct_effect_prop_diff)</span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>  </span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a><span class="co"># crosstable_options(effect_args=my_effect_args) #set globally if desired</span></span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a>mtcars2 <span class="sc">%&gt;%</span> </span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>  <span class="fu">crosstable</span>(am, <span class="at">by=</span>vs, <span class="at">effect=</span><span class="cn">TRUE</span>, <span class="at">effect_args=</span>my_effect_args) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a>  <span class="fu">as_flextable</span>()</span></code></pre></div>
+<div class="tabwid"><style>.cl-9e5dea1e{table-layout:auto;}.cl-9e5726fc{font-family:'Arial';font-size:11pt;font-weight:bold;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-9e572710{font-family:'Arial';font-size:11pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-9e572711{font-family:'Arial';font-size:8pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-9e59bdd6{margin:0;text-align:center;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9e59bde0{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:0;padding-top:0;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9e59bde1{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:0;padding-top:0;padding-left:25pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9e59bdea{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:0;padding-top:0;padding-left:25pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9e59bdeb{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:0;padding-top:0;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9e59d5aa{background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(0, 0, 0, 1.00);border-top: 1.5pt solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(255, 255, 255, 0.00);border-right: 0 solid rgba(255, 255, 255, 0.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-9e59d5b4{background-color:transparent;vertical-align: middle;border-bottom: 1pt solid rgba(0, 0, 0, 1.00);border-top: 1.5pt solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(255, 255, 255, 0.00);border-right: 0 solid rgba(255, 255, 255, 0.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-9e59d5b5{background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(0, 0, 0, 1.00);border-top: 1pt solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(255, 255, 255, 0.00);border-right: 0 solid rgba(255, 255, 255, 0.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-9e59d5be{background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 1pt solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-9e59d5bf{background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-9e59d5c0{background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}</style><table data-quarto-disable-processing="true" class="cl-9e5dea1e"><thead><tr style="overflow-wrap:break-word;"><th rowspan="2" class="cl-9e59d5aa"><p class="cl-9e59bdd6"><span class="cl-9e5726fc"></span></p></th><th colspan="2" class="cl-9e59d5b4"><p class="cl-9e59bdd6"><span class="cl-9e5726fc">Engine</span></p></th><th rowspan="2" class="cl-9e59d5aa"><p class="cl-9e59bdd6"><span class="cl-9e5726fc">effect</span></p></th></tr><tr style="overflow-wrap:break-word;"><th class="cl-9e59d5b5"><p class="cl-9e59bdd6"><span class="cl-9e5726fc">straight</span></p></th><th class="cl-9e59d5b5"><p class="cl-9e59bdd6"><span class="cl-9e5726fc">vshaped</span></p></th></tr></thead><tbody><tr style="overflow-wrap:break-word;"><td class="cl-9e59d5be"><p class="cl-9e59bde0"><span class="cl-9e5726fc">Transmission (am)</span></p></td><td class="cl-9e59d5be"><p class="cl-9e59bde0"><span class="cl-9e572710"></span></p></td><td class="cl-9e59d5be"><p class="cl-9e59bde0"><span class="cl-9e572710"></span></p></td><td class="cl-9e59d5be"><p class="cl-9e59bde0"><span class="cl-9e572710">Difference of proportions, auto vs manual</span><br><span class="cl-9e572710">Proportion difference: 0.17 [-0.58 to 0.24]</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-9e59d5bf"><p class="cl-9e59bde1"><span class="cl-9e572711">auto</span></p></td><td class="cl-9e59d5bf"><p class="cl-9e59bde0"><span class="cl-9e572711">7 (36.84%)</span></p></td><td class="cl-9e59d5bf"><p class="cl-9e59bde0"><span class="cl-9e572711">12 (63.16%)</span></p></td><td class="cl-9e59d5bf"><p class="cl-9e59bde0"><span class="cl-9e572711"></span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-9e59d5c0"><p class="cl-9e59bdea"><span class="cl-9e572711">manual</span></p></td><td class="cl-9e59d5c0"><p class="cl-9e59bdeb"><span class="cl-9e572711">7 (53.85%)</span></p></td><td class="cl-9e59d5c0"><p class="cl-9e59bdeb"><span class="cl-9e572711">6 (46.15%)</span></p></td><td class="cl-9e59d5c0"><p class="cl-9e59bdeb"><span class="cl-9e572711"></span></p></td></tr></tbody></table></div>
+<p>The same general approach can be used to define custom effects for
+numeric and survival variables.</p>
+<p>Several alternative effect functions are already implemented in
+<code>crosstable</code>.<br />
+See <code>?effect_summary</code>, <code>?effect_tabular</code>, and
+<code>?effect_survival</code> for available options.</p>
+</div>
+<div id="calculating-tests" class="section level2">
+<h2>Calculating tests</h2>
+<p>Customizing statistical tests is even simpler.<br />
+A custom test function only needs to return a list with two
+elements:</p>
+<ul>
+<li><code>p.value</code>: the p-value</li>
+<li><code>method</code>: the label displayed for the test</li>
+</ul>
+<p>For example, the following function replaces the default numeric test
+with a linear model.<br />
+In a two-group setting, this is close in spirit to a classical
+comparison test, but it illustrates how custom testing logic can be
+integrated into <code>crosstable</code>.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>ct_test_lm <span class="ot">=</span> <span class="cf">function</span>(x, by){</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  fit <span class="ot">=</span> <span class="fu">lm</span>(x <span class="sc">~</span> by)</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  pval <span class="ot">=</span> <span class="fu">anova</span>(fit)<span class="sc">$</span><span class="st">`</span><span class="at">Pr(&gt;F)</span><span class="st">`</span>[<span class="dv">1</span>]</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">p.value =</span> pval, <span class="at">method =</span> <span class="st">&quot;Linear model ANOVA&quot;</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>}</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>my_test_args <span class="ot">=</span> <span class="fu">crosstable_test_args</span>(<span class="at">test_summarize=</span>ct_test_lm)</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>  </span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="co"># crosstable_options(test_args=my_test_args) #set globally if desired</span></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>mtcars2 <span class="sc">%&gt;%</span> </span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>  <span class="fu">crosstable</span>(mpg, <span class="at">by=</span>vs, <span class="at">test=</span><span class="cn">TRUE</span>, <span class="at">test_args=</span>my_test_args) <span class="sc">%&gt;%</span> </span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>  <span class="fu">as_flextable</span>()</span></code></pre></div>
+<div class="tabwid"><style>.cl-9e7a7774{table-layout:auto;}.cl-9e73cc58{font-family:'Arial';font-size:11pt;font-weight:bold;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-9e73cc62{font-family:'Arial';font-size:11pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-9e73cc63{font-family:'Arial';font-size:8pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-9e764366{margin:0;text-align:center;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9e764370{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:0;padding-top:0;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9e764371{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:0;padding-top:0;padding-left:25pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9e764372{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:0;padding-top:0;padding-left:25pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9e76437a{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:0;padding-top:0;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-9e76672e{background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(0, 0, 0, 1.00);border-top: 1.5pt solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(255, 255, 255, 0.00);border-right: 0 solid rgba(255, 255, 255, 0.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-9e766738{background-color:transparent;vertical-align: middle;border-bottom: 1pt solid rgba(0, 0, 0, 1.00);border-top: 1.5pt solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(255, 255, 255, 0.00);border-right: 0 solid rgba(255, 255, 255, 0.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-9e766739{background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(0, 0, 0, 1.00);border-top: 1pt solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(255, 255, 255, 0.00);border-right: 0 solid rgba(255, 255, 255, 0.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-9e766742{background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 1pt solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-9e766743{background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-9e766744{background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}</style><table data-quarto-disable-processing="true" class="cl-9e7a7774"><thead><tr style="overflow-wrap:break-word;"><th rowspan="2" class="cl-9e76672e"><p class="cl-9e764366"><span class="cl-9e73cc58"></span></p></th><th colspan="2" class="cl-9e766738"><p class="cl-9e764366"><span class="cl-9e73cc58">Engine</span></p></th><th rowspan="2" class="cl-9e76672e"><p class="cl-9e764366"><span class="cl-9e73cc58">test</span></p></th></tr><tr style="overflow-wrap:break-word;"><th class="cl-9e766739"><p class="cl-9e764366"><span class="cl-9e73cc58">straight</span></p></th><th class="cl-9e766739"><p class="cl-9e764366"><span class="cl-9e73cc58">vshaped</span></p></th></tr></thead><tbody><tr style="overflow-wrap:break-word;"><td class="cl-9e766742"><p class="cl-9e764370"><span class="cl-9e73cc58">Miles/(US) gallon (mpg)</span></p></td><td class="cl-9e766742"><p class="cl-9e764370"><span class="cl-9e73cc62"></span></p></td><td class="cl-9e766742"><p class="cl-9e764370"><span class="cl-9e73cc62"></span></p></td><td class="cl-9e766742"><p class="cl-9e764370"><span class="cl-9e73cc62">p value: &lt;0.0001 </span><br><span class="cl-9e73cc62">(Linear model ANOVA)</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-9e766743"><p class="cl-9e764371"><span class="cl-9e73cc63">mean</span></p></td><td class="cl-9e766743"><p class="cl-9e764370"><span class="cl-9e73cc63">24.6</span></p></td><td class="cl-9e766743"><p class="cl-9e764370"><span class="cl-9e73cc63">16.6</span></p></td><td class="cl-9e766743"><p class="cl-9e764370"><span class="cl-9e73cc63"></span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-9e766743"><p class="cl-9e764371"><span class="cl-9e73cc63">std dev</span></p></td><td class="cl-9e766743"><p class="cl-9e764370"><span class="cl-9e73cc63">5.4</span></p></td><td class="cl-9e766743"><p class="cl-9e764370"><span class="cl-9e73cc63">3.9</span></p></td><td class="cl-9e766743"><p class="cl-9e764370"><span class="cl-9e73cc63"></span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-9e766743"><p class="cl-9e764371"><span class="cl-9e73cc63">qtl 25%</span></p></td><td class="cl-9e766743"><p class="cl-9e764370"><span class="cl-9e73cc63">21.4</span></p></td><td class="cl-9e766743"><p class="cl-9e764370"><span class="cl-9e73cc63">14.8</span></p></td><td class="cl-9e766743"><p class="cl-9e764370"><span class="cl-9e73cc63"></span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-9e766744"><p class="cl-9e764372"><span class="cl-9e73cc63">qtl 75%</span></p></td><td class="cl-9e766744"><p class="cl-9e76437a"><span class="cl-9e73cc63">29.6</span></p></td><td class="cl-9e766744"><p class="cl-9e76437a"><span class="cl-9e73cc63">19.1</span></p></td><td class="cl-9e766744"><p class="cl-9e76437a"><span class="cl-9e73cc63"></span></p></td></tr></tbody></table></div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

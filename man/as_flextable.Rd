@@ -12,18 +12,20 @@
 \method{as_flextable}{crosstable}(
   x,
   keep_id = FALSE,
+  ...,
   by_header = NULL,
   autofit = TRUE,
   compact = FALSE,
+  collapse = NULL,
   show_test_name = TRUE,
+  allow_breaks = FALSE,
   fontsizes = list(body = 11, subheaders = 11, header = 11),
   padding_v = NULL,
   remove_header_keys = TRUE,
   header_show_n = FALSE,
   header_show_n_pattern = "{.col} (N={.n})",
   generic_labels = list(id = ".id", variable = "variable", value = "value", total =
-    "Total", label = "label", test = "test", effect = "effect"),
-  ...
+    "Total", label = "label", test = "test", effect = "effect")
 )
 
 as_flextable(x, ...)
@@ -33,13 +35,19 @@ as_flextable(x, ...)
 
 \item{keep_id}{whether to keep the \code{.id} column.}
 
+\item{...}{unused.}
+
 \item{by_header}{a string to override the header if \code{x} has only one \code{by} stratum.}
 
 \item{autofit}{whether to automatically adjust the table. Can also be a function.}
 
 \item{compact}{whether to compact the table. If \code{TRUE}, see \code{\link[=ct_compact.crosstable]{ct_compact.crosstable()}} to see how to use \code{keep_id}.}
 
+\item{collapse}{levels to collapse when in compact format. Ignored if \code{compact!=TRUE}. See examples.}
+
 \item{show_test_name}{in the \code{test} column, show the test name.}
+
+\item{allow_breaks}{whether to allow the table to break on .}
 
 \item{fontsizes}{font sizes as a list of keys. Default to \code{list(body=11, subheaders=11, header=11)}. If set through arguments instead of options, all 3 names should be specified.}
 
@@ -52,8 +60,6 @@ as_flextable(x, ...)
 \item{header_show_n_pattern}{glue pattern used when \code{header_show_n==TRUE}. \code{.col} is the name of the column and \code{.n} the size of the group. Default to \code{{.col} (N={.n})}; you can also use \code{{.col_key}} and \code{{.col_val}} when \code{by} has multiple stratum. To control the "Total" column, enter this as a \code{list} with names "cell" and "total".}
 
 \item{generic_labels}{names of the crosstable default columns. Useful for translation for instance.}
-
-\item{...}{unused.}
 }
 \value{
 a flextable.
@@ -73,17 +79,24 @@ crosstable_options(crosstable_fontsize_header=14,
 crosstable(iris) \%>\% as_flextable()
 crosstable(mtcars2, -model, by=c(am, vs)) \%>\% as_flextable(header_show_n=1)
 crosstable(mtcars2, cols=c(mpg, cyl), by=am, effect=TRUE) \%>\%
-   as_flextable(keep_id=TRUE, autofit=FALSE)
+  as_flextable(keep_id=TRUE, autofit=FALSE)
 crosstable(mtcars2, cols=c(mpg, cyl), by=am, effect=TRUE, total=TRUE) \%>\%
-   as_flextable(compact=TRUE, header_show_n=TRUE,
-                header_show_n_pattern=list(cell="{.col} (N={.n})", total="Total\n(N={.n})"))
+  as_flextable(compact=TRUE, header_show_n=TRUE,
+               header_show_n_pattern=list(cell="{.col} (N={.n})", total="Total\n(N={.n})"))
+
+#collapse levels
+mtcars2 \%>\%
+  dplyr::mutate(am_man = forcats::fct_recode(am, "Yes"="manual", "No"="auto")) \%>\%
+  apply_labels(am_man="Manual transmission") \%>\%
+  crosstable(c(mpg, am_man, hp), by=vs, test=TRUE, effect=TRUE) \%>\%
+  as_flextable(compact=TRUE, collapse="Yes")
 
 #Renaming (because why not?)
 crosstable(mtcars2, am, by=vs, total="both", test=TRUE, effect=TRUE) \%>\%
-   dplyr::rename(ID=.id, math=variable, Tot=Total, lab=label, pval=test, fx=effect) \%>\%
-   as_flextable(by_header = "Engine shape",
-                generic_labels=list(id = "ID", variable = "math", total="Tot",
-                                    label = "lab", test = "pval", effect="fx"))
+  dplyr::rename(ID=.id, math=variable, Tot=Total, lab=label, pval=test, fx=effect) \%>\%
+  as_flextable(by_header = "Engine shape",
+               generic_labels=list(id = "ID", variable = "math", total="Tot",
+                                   label = "lab", test = "pval", effect="fx"))
 }
 \seealso{
 \code{\link[=crosstable]{crosstable()}}, \code{\link[flextable:flextable]{flextable::flextable()}}, \code{\link[=as_gt.crosstable]{as_gt.crosstable()}}

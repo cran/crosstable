@@ -45,16 +45,20 @@ mtcars_labels = read.table(header=TRUE, text="
   am    'Transmission'
   gear  'Number of forward gears'
   carb  'Number of carburetors'
+  hp_date  'Some nonsense date'
+  qsec_posix  'Date+time'
 ")
 mtcars2 = mtcars %>% 
   mutate(model=rownames(mtcars), 
          vs=ifelse(vs==0, "vshaped", "straight"),
          am=ifelse(am==0, "auto", "manual"), 
+         hp_date = as.Date(hp , origin="2010-01-01"),
+         qsec_posix = as.POSIXct(qsec*3600*24 , origin="2010-01-01"),
          across(c("cyl", "gear"), factor),
          .before=1) %>% 
   import_labels(mtcars_labels, name_from="name", label_from="label") %>% 
   as_tibble()
-#I also could have used `labelled::set_variable_labels()` to add labels
+#I also could have used `apply_labels()` to add labels
 
 ## ----crosstable-flextable-------------------------------------------------------------------------
 crosstable(mtcars2, c(mpg, cyl), by=am) %>%
@@ -88,13 +92,12 @@ crosstable(aml, surv, by=x, times=c(0,50,150), followup=TRUE) %>%
   as_flextable(keep_id=TRUE)
 
 ## ----crosstable-dates-----------------------------------------------------------------------------
-mtcars2$x_date = as.Date(mtcars2$hp , origin="2010-01-01") %>% set_label("Date")
-mtcars2$x_posix = as.POSIXct(mtcars2$qsec*3600*24 , origin="2010-01-01") %>% set_label("Date+time")
-crosstable(mtcars2, c(x_date, x_posix), date_format="%d/%m/%Y") %>% 
+crosstable(mtcars2, c(hp_date, qsec_posix), date_format="%d/%m/%Y") %>% 
   as_flextable(keep_id=TRUE)
 
 ## ----crosstable-dates2----------------------------------------------------------------------------
-crosstable(mtcars2, c(x_date, x_posix), funs=meansd, funs_arg=list(date_unit="days")) %>% 
+crosstable(mtcars2, c(hp_date, qsec_posix), 
+           funs=meansd, funs_arg=list(date_unit="days")) %>% 
   as_flextable(keep_id=TRUE)
 
 ## ----crosstable-effect----------------------------------------------------------------------------

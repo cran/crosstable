@@ -53,7 +53,9 @@ cross_categorical=function(data_x, data_y, showNA, total, label, percent_digits,
 #' @noRd
 summarize_categorical_single = function(x, showNA, total, digits, percent_pattern,
                                         remove_zero_percent=NULL){
-  tbd = table(x, useNA = "always") %>%
+  tbd = x %>%
+    drop_na_level() %>%
+    table(useNA = "always") %>%
     as.data.frame() %>%
     select(x=1, n=2) #needed for an odd bug on fedora-devel
   if(is.null(remove_zero_percent)){
@@ -110,7 +112,6 @@ summarize_categorical_single = function(x, showNA, total, digits, percent_patter
 #' @importFrom forcats fct_na_value_to_level
 #' @importFrom glue glue
 #' @importFrom purrr reduce
-#' @importFrom stringr str_replace
 #' @importFrom tibble add_row as_tibble
 #' @importFrom tidyr pivot_wider replace_na
 #' @keywords internal

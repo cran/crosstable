@@ -39,6 +39,9 @@ body_add_crosstable = function (doc, x, body_fontsize=NULL,
                                 padding_v=NULL,
                                 allow_break=TRUE,
                                 max_cols=25, ...) {
+  if(is.null(x)){
+    cli_abort("{caller_arg(x)} is NULL")
+  }
   assert_class(x, "crosstable", .var.name=vname(x))
 
   if(missing(padding_v)) padding_v = getOption("crosstable_padding_v", NULL)
@@ -429,6 +432,7 @@ body_add_crosstable_list = function(...){
 #' @param ... passed on to [flextable::body_add_flextable()] or [body_add_crosstable()]
 #'
 #' @return The `docx` object `doc`
+#' @importFrom cli cli_abort
 #' @importFrom flextable body_add_flextable qflextable
 #' @export
 #'
@@ -589,7 +593,7 @@ body_add_figure_legend = function(doc, legend, ..., bookmark=NULL,
 
 #' @importFrom glue glue
 #' @importFrom lifecycle deprecate_warn is_present
-#' @importFrom officer body_add_fpar fp_text_lite fpar ftext run_bookmark run_word_field
+#' @importFrom officer body_add_fpar fp_text_lite ftext run_bookmark run_word_field
 #' @keywords internal
 #' @noRd
 body_add_legend = function(doc, legend, legend_name, bookmark,
@@ -644,6 +648,7 @@ body_add_legend = function(doc, legend, legend_name, bookmark,
 #'
 #' @author Dan Chaltiel
 #' @export
+#' @importFrom cli cli_abort
 #' @importFrom officer body_add_img
 #' @examples
 #' img.file = file.path( R.home("doc"), "html", "logo.jpg" )
@@ -661,6 +666,9 @@ body_add_img2 = function(doc, src, width, height,
                          ...){
   units = match.arg(units, c("in", "cm", "mm"))
   to_units = function(x) x/c(`in` = 1, cm = 2.54, mm = 2.54 * 10)[units]
+  if(!file.exists(src)){
+    cli_abort("File {.file {src}} does not exist", call=parent.frame())
+  }
   body_add_img(x=doc, src=src, width=to_units(width), height=to_units(height), style=style, ...)
 }
 
@@ -668,12 +676,14 @@ body_add_img2 = function(doc, src, width, height,
 
 #' Alternative to [officer::body_add_gg()] which uses `ggplot` syntax
 #'
-#' @param doc an `rdocx` object
+#' @param doc An `rdocx` object from **officer**.
 #' @param value ggplot object
 #' @param width,height width and height. Can be abbreviated to w and h.
 #' @param style paragraph style
 #' @param res resolution of the png image in ppi (passed to the argument `dpi` of [ggplot2::ggsave()])
 #' @param units units for width and height
+#' @param add_legend add a legend if the ggplot has a legend attribute (see example)
+#' @param bookmark the bookmark of the legend, if applicable
 #' @param ... other arguments to be passed to [ggplot2::ggsave()]
 #'
 #' @return The docx object `doc`
@@ -681,11 +691,13 @@ body_add_img2 = function(doc, src, width, height,
 #' @author Dan Chaltiel
 #' @export
 #' @importFrom checkmate assert_class
+#' @importFrom cli cli_abort
 #' @importFrom rlang check_installed
 #' @examples
 #' library(officer)
 #' library(ggplot2)
 #' p = ggplot(data=iris, aes(Sepal.Length, Petal.Length)) + geom_point()
+#' attr(p, "legend") = "Sepal length by Petal length"
 #' crosstable_options(
 #'   units="cm",
 #'   style_image="centered"
@@ -700,17 +712,66 @@ body_add_gg2 = function(doc, value,
                         height = getOption("crosstable_gg_height", 5),
                         units = getOption("crosstable_units", "in"),
                         style = getOption("crosstable_style_image", doc$default_styles$paragraph),
+                        add_legend=TRUE, bookmark=NULL,
                         res = 300, ... ){
   check_installed("ggplot2", reason="for function `body_add_gg2()` to work.")
+  if(is.null(value)){
+    cli_abort("{caller_arg(value)} is NULL")
+  }
   assert_class(value, "ggplot")
   units = match.arg(units, c("in", "cm", "mm"))
   file = tempfile(fileext=".png")
   ggplot2::ggsave(file, value, width=width, height=height, units=units, dpi=res, ...)
   on.exit(unlink(file))
+  legend = attr(value, "legend")
+  if(isTRUE(add_legend) && !is.null(legend)){
+    doc = body_add_figure_legend(doc, legend=legend, bookmark=bookmark)
+  }
   body_add_img2(doc, src=file, style=style, width=width, height=height, units=units)
 }
 
-
+#' Alternative to [flextable::body_add_flextable()]
+#'
+#' Extends `body_add_flextable()` by adding:
+#' - a legend (if `x` has a `"legend"` attribute), via [body_add_table_legend()]
+#' - an optional empty line after the table
+#'
+#' @param doc An `rdocx` object from **officer**.
+#' @param x A `flextable` object. If it has a `"legend"` attribute, it is added.
+#' @param bookmark Optional. Word bookmark name for the legend.
+#' @param append_line Whether to add an empty line after the table.
+#' @param ... Passed to [flextable::body_add_flextable()].
+#'
+#' @return The docx object `doc`
+#' @export
+#'
+#' @examples
+#' library(officer)
+#' library(ggplot2)
+#' ft = flextable::flextable(head(iris)) %>%
+#'   structure(legend="The iris dataset")
+#'
+#' doc = read_docx() %>%
+#'  body_add_normal("Text before") %>%
+#'  body_add_flextable2(ft) %>%
+#'  body_add_normal("Text after")
+#' write_and_open(doc)
+#' @importFrom cli cli_abort
+#' @importFrom flextable body_add_flextable
+body_add_flextable2 = function(doc, x, bookmark=NULL, append_line=TRUE, ...){
+  legend = attr(x, "legend")
+  if(is.null(x)){
+    cli_abort("{caller_arg(x)} is NULL")
+  }
+  if(!is.null(legend)){
+    doc = body_add_table_legend(doc, legend=legend, bookmark=bookmark)
+  }
+  doc = body_add_flextable(doc, x, ...)
+  if(isTRUE(append_line)){
+    doc = body_add_normal(doc)
+  }
+  doc
+}
 
 #' Replace text on several bookmarks at once
 #'
@@ -811,6 +872,7 @@ docx_bookmarks2 = function(x, return_vector=FALSE,
 #'
 #' @param doc the docx object
 #' @param docx.file the name of the target file. If missing or NULL, the doc will open in a temporary file.
+#' @param add_date whether to add the current date before `docx.file` extension.
 #'
 #' @return Nothing, called for its side effects
 #'
@@ -830,9 +892,18 @@ docx_bookmarks2 = function(x, return_vector=FALSE,
 #' write_and_open(doc)
 #' \dontrun{
 #' write_and_open(doc, "example.docx")
+#' write_and_open(doc, "example.docx", add_date=TRUE)
+#' write_and_open(doc, "example.docx", add_date=Sys.Date()-1)
 #' }
 # nocov start
-write_and_open = function(doc, docx.file){
+write_and_open = function(doc, docx.file, add_date=FALSE){
+  if(!missing(docx.file) && !isFALSE(add_date)){
+    ext = tools::file_ext(docx.file)
+    file = tools::file_path_sans_ext(docx.file)
+    if(isTRUE(add_date)) add_date = Sys.Date()
+    if(is.date(add_date)) add_date = format(add_date, "%Y-%m-%d")
+    docx.file = paste0(file, "_", add_date, ".", ext)
+  }
 
   #checking if the file is already open... by removing it
   tryCatch({
@@ -911,7 +982,7 @@ generate_autofit_macro = function(){
 
 #' Parse value for multiple regexp to unravel formats (bold, italic and underline) and reference calls.
 #'
-#' @importFrom officer body_add_par body_add_fpar
+#' @importFrom officer body_add_fpar
 #'
 #' @keywords internal
 #' @noRd
@@ -926,9 +997,10 @@ utils::globalVariables(c("do", "end", "start"))
 
 #' Compile Markdown to `officer` formatted paragraph
 #' @return a `fpar`
-#' @importFrom dplyr arrange bind_rows case_when everything group_split lag lead mutate mutate_all select
+#' @importFrom cli cli_warn
+#' @importFrom dplyr across arrange bind_rows case_when everything filter group_split lag lead mutate mutate_all na_if row_number select
 #' @importFrom glue glue
-#' @importFrom officer fp_text_lite ftext run_linebreak run_word_field
+#' @importFrom officer fp_text_lite fpar ftext run_linebreak run_word_field
 #' @importFrom purrr accumulate
 #' @importFrom stringr fixed str_extract str_locate_all str_replace_all
 #' @importFrom tibble as_tibble tibble
@@ -983,8 +1055,8 @@ parse_md = function(x, parse_ref=TRUE, parse_format=TRUE, parse_code=TRUE, parse
   rtn = rtn %>%
     arrange(start) %>%
     mutate(
-      do = purrr::accumulate(lead(format), .init=get_state(state0, format[1]),
-                             ~get_state(.x, .y)) %>%
+      do = accumulate(lead(format), .init=get_state(state0, format[1]),
+                      ~get_state(.x, .y)) %>%
         head(-1) %>%
         mutate_all(~{
           lag_x = lag(.x, default=0)

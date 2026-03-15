@@ -1,29 +1,5 @@
 
 
-# Purrr compatibility -------------------------------------------------------------------------
-
-test_that("Compact method error if list without purrr", {
-    ll=list(a = "a", b = NULL, c = integer(0), d = NA, e = list())
-    ct=crosstable(iris)
-    expect_silent(purrr::compact(ll))
-    expect_error(compact(ll), class="compact_notfound_error")
-    expect_error(ct_compact(ll), class="ct_compact_notfound_error")
-    lifecycle::expect_deprecated(compact(ct))
-    lifecycle::expect_deprecated(compact(as.data.frame(ct), name_from="label"))
-})
-
-test_that("Compact method OK with purrr", {
-    ll=list(a = "a", b = NULL, c = integer(0), d = NA, e = list())
-    shhh(library(purrr))
-    compact=crosstable::compact
-    expect_identical(compact(ll), list(a="a",d=NA))
-
-    x=sloop::s3_dispatch(compact(ll))
-    expect_true("compact.list" %in% x$method)
-    x=sloop::s3_dispatch(compact(crosstable(iris)))
-    expect_true("compact.crosstable" %in% x$method)
-})
-
 # Method checks -----------------------------------------------------------
 
 test_that("Compact method OK with data.frame", {
@@ -56,13 +32,32 @@ test_that("Compact method OK with crosstable", {
 test_that("Compacting inside or outside as_flextable.crosstable gives the same result", {
     rlang::local_options(tidyselect_verbosity = "quiet")
     ct1 = crosstable(esoph, by="tobgp", test = TRUE) %>% suppressWarnings() %>% ct_compact()
-    expect_equal(dim(ct1), c(22,6))
+    expect_equal(dim(ct1), c(22, 7))
     expect_s3_class(ct1, c("data.frame", "crosstable", "compacted_crosstable"))
 
     ct2 = crosstable(esoph, by="tobgp", test = TRUE)
     expect_identical(as_flextable(ct1), as_flextable(ct2, compact=TRUE))
 })
 
+
+test_that("Compact and collapse", {
+  local_reproducible_output(width=150)
+
+  x = mtcars2 %>%
+    mutate(
+      am = fct_recode(am, "Yes"="manual", "No"="auto"),
+      mpg20 = factor(mpg>20, labels=c("Non", "Oui"))
+    ) %>%
+    apply_labels(am="Manual transmission", mpg20="mpg > 20") %>%
+    crosstable(c(mpg, am, hp, mpg20), by=vs, effect=T) %>%
+    mutate(effect=str_remove_all(effect, "[\\d\\.]{3,}.*"))
+
+  expect_snapshot({
+    ct_compact(x) %>% as.data.frame()
+    ct_compact(x, collapse=c("Yes", "Oui")) %>% as.data.frame()
+  })
+
+})
 
 test_that("Compact method OK with as_flextable()", {
 
@@ -77,7 +72,6 @@ test_that("Compact method OK with as_flextable()", {
   expect_equal(as.character(ft1$header$dataset), c("label", "variable", "value"))
 
   ft2 = ct %>% af(compact=TRUE)
-  expect_null(ft2$body$dataset$.id)
   expect_null(ft2$body$dataset$label)
   expect_equal(ft2$body$dataset$variable,
                c("Engine", "auto", "manual", "Engine", "straight", "vshaped"))

@@ -6,7 +6,7 @@ test_that("numeric by numeric", {
   expect_equal(dim(x1), c(7,4))
   expect_equal(sum(is.na(x1)), 0)
 
-  x2=crosstable(mtcars3, where(is.numeric.and.not.surv), by=disp, test=T)
+  x2=crosstable(mtcars3, where(is.numeric.and.not.surv), by=disp, test=TRUE)
   expect_equal(dim(x2), c(7,5))
   expect_equal(sum(is.na(x2)), 0)
 
@@ -28,7 +28,7 @@ test_that("by factor if numeric <= 3 levels", {
   x10 %>% as_flextable()
   x10 = as.data.frame(x10)
 
-  expect_identical(x10[3,5], "14 (43.75% / 100.00% / 77.78%)")
+  expect_identical(x10[3,5], "14 (43.75% / 100% / 77.78%)")
   expect_equal(dim(x10), c(4,6))
   expect_equal(sum(is.na(x10)), 0)
 })
@@ -72,47 +72,6 @@ test_that("by factor if numeric <= 3 levels", {
 #   expect_equal(dim(x), c(4,6))
 #   expect_equal(sum(is.na(x)), 0)
 # })
-
-
-# Format --------------------------------------------------------------------------------------
-
-test_that("`format_fixed` works", {
-  expect_snapshot({
-    x = c(1, 1.2, 12.78749, pi, 0.00000012)
-    format_fixed(x, digits=3) #default zero_digits=1
-    format_fixed(x, digits=3, zero_digits=2)
-    format_fixed(x, digits=3, zero_digits=NULL)
-
-    x_sd = sd(iris$Sepal.Length/10000, na.rm=TRUE)
-    format_fixed(x_sd, dig=6)
-    format_fixed(x_sd, dig=3, zero_digits=2) #default only_round=FALSE
-    format_fixed(x_sd, dig=3, zero_digits=2, only_round=TRUE)
-    options("crosstable_only_round"=TRUE)
-    format_fixed(x_sd, dig=3, zero_digits=2) #override default
-    options("crosstable_only_round"=NULL)
-
-    x2 = c(0.01, 0.1001, 0.500005, 0.00000012)
-    format_fixed(x2, scientific=0, dig=1) #everything abs>10^0 gets scientific
-    format_fixed(x2, scientific=FALSE, dig=6) #last would be 0 so it is scientific. Try `zero_digits=NA` or `dig=7`
-    format_fixed(x2, scientific=FALSE, dig=6, zero_digits=NA)
-    format_fixed(x2, scientific=FALSE, dig=7)
-    format_fixed(x2, scientific=FALSE, percent=TRUE, dig=0)
-    format_fixed(x2, scientific=FALSE, eps=0.05)
-
-    x_date = as.Date("1960-01-01")+c(0,32,400)
-    format_fixed(x_date)
-    format_fixed(x_date, date_format="%Y/%m/%d")
-
-    x_posix = as.POSIXct("1960-01-01 00:00:01")+c(1,5,10)*1e6
-    format_fixed(x_posix)
-    format_fixed(x_posix, date_format="%Y/%m/%d")
-
-    withr::with_package("lubridate", format_fixed(lubridate::days(1:5)))
-    withr::with_package("lubridate", format_fixed(lubridate::weeks(1:5)))
-  })
-})
-
-
 
 # Functions ---------------------------------------------------------------
 # test_that("Functions work", {
@@ -263,16 +222,10 @@ test_that("Special summary functions", {
   ct = crosstable(mtcars2, hp_date, date_format="%d/%m/%Y") %>% as.data.frame()
   expect_equal(ct[1,4], "22/02/2010 - 02/12/2010")
 
-  #only_round
+  #only_round: zero_digits=NULL
   x = mtcars2 %>% dplyr::transmute(mpg=mpg/100000)
-  rlang::local_options(crosstable_only_round=NULL)
   ct = crosstable(x, funs_arg=list(dig=2, zero_digits=5)) %>% as.data.frame()
-  expect_equal(ct[1,4], "0.000104 / 0.000339")
-  rlang::local_options(crosstable_only_round=TRUE)
-  ct = crosstable(x, funs_arg=list(dig=2, zero_digits=5)) %>% as.data.frame()
-  expect_equal(ct[1,4], "0 / 0")
+  expect_equal(ct[1,4], "1.0400e-04 / 3.3900e-04")
+  ct = crosstable(x, funs_arg=list(dig=2, zero_digits=NULL)) %>% as.data.frame()
+  expect_equal(ct[1,4], "0.00 / 0.00")
 })
-
-print(("days"))
-print(exists("days"))
-

@@ -7,7 +7,9 @@
 #' @param by_header a string to override the header if `x` has only one `by` stratum.
 #' @param autofit whether to automatically adjust the table. Can also be a function.
 #' @param compact whether to compact the table. If `TRUE`, see [ct_compact.crosstable()] to see how to use `keep_id`.
+#' @param collapse levels to collapse when in compact format. Ignored if `compact!=TRUE`. See examples.
 #' @param show_test_name in the `test` column, show the test name.
+#' @param allow_breaks whether to allow the table to break on .
 #' @param fontsizes font sizes as a list of keys. Default to `list(body=11, subheaders=11, header=11)`. If set through arguments instead of options, all 3 names should be specified.
 #' @param padding_v vertical padding (body).
 #' @param remove_header_keys if `TRUE` and `x` has several `by` strata, header will only display values.
@@ -24,13 +26,13 @@
 #' @seealso [crosstable()], [flextable::flextable()], [as_gt.crosstable()]
 #'
 #' @importFrom checkmate assert_class vname
-#' @importFrom cli cli_warn
-#' @importFrom dplyr across all_of any_of filter group_by intersect lead mutate pull recode select starts_with sym ungroup
-#' @importFrom flextable align autofit bold border border_inner_h fix_border_issues flextable fontsize hline hline_bottom hline_top merge_h merge_v padding set_header_df set_header_labels set_table_properties vline_left vline_right
+#' @importFrom cli cli_abort cli_warn
+#' @importFrom dplyr across all_of cur_column everything filter group_by intersect lag lead mutate pull select starts_with sym ungroup
+#' @importFrom flextable align bold border border_inner_h fix_border_issues flextable fontsize hline hline_bottom hline_top merge_h merge_v padding paginate set_header_df set_header_labels set_table_properties vline_left vline_right
 #' @importFrom glue glue
 #' @importFrom officer fp_border
 #' @importFrom purrr map
-#' @importFrom rlang set_names
+#' @importFrom rlang check_dots_empty set_names
 #' @importFrom stringr str_remove str_replace str_split str_sub
 #' @importFrom tibble lst tibble
 #' @importFrom tidyr replace_na separate_wider_delim
@@ -44,27 +46,35 @@
 #' crosstable(iris) %>% as_flextable()
 #' crosstable(mtcars2, -model, by=c(am, vs)) %>% as_flextable(header_show_n=1)
 #' crosstable(mtcars2, cols=c(mpg, cyl), by=am, effect=TRUE) %>%
-#'    as_flextable(keep_id=TRUE, autofit=FALSE)
+#'   as_flextable(keep_id=TRUE, autofit=FALSE)
 #' crosstable(mtcars2, cols=c(mpg, cyl), by=am, effect=TRUE, total=TRUE) %>%
-#'    as_flextable(compact=TRUE, header_show_n=TRUE,
-#'                 header_show_n_pattern=list(cell="{.col} (N={.n})", total="Total\n(N={.n})"))
+#'   as_flextable(compact=TRUE, header_show_n=TRUE,
+#'                header_show_n_pattern=list(cell="{.col} (N={.n})", total="Total\n(N={.n})"))
+#'
+#' #collapse levels
+#' mtcars2 %>%
+#'   dplyr::mutate(am_man = forcats::fct_recode(am, "Yes"="manual", "No"="auto")) %>%
+#'   apply_labels(am_man="Manual transmission") %>%
+#'   crosstable(c(mpg, am_man, hp), by=vs, test=TRUE, effect=TRUE) %>%
+#'   as_flextable(compact=TRUE, collapse="Yes")
 #'
 #' #Renaming (because why not?)
 #' crosstable(mtcars2, am, by=vs, total="both", test=TRUE, effect=TRUE) %>%
-#'    dplyr::rename(ID=.id, math=variable, Tot=Total, lab=label, pval=test, fx=effect) %>%
-#'    as_flextable(by_header = "Engine shape",
-#'                 generic_labels=list(id = "ID", variable = "math", total="Tot",
-#'                                     label = "lab", test = "pval", effect="fx"))
-as_flextable.crosstable = function(x, keep_id=FALSE, by_header=NULL,
-                                   autofit=TRUE, compact=FALSE,
-                                   show_test_name=TRUE,
+#'   dplyr::rename(ID=.id, math=variable, Tot=Total, lab=label, pval=test, fx=effect) %>%
+#'   as_flextable(by_header = "Engine shape",
+#'                generic_labels=list(id = "ID", variable = "math", total="Tot",
+#'                                    label = "lab", test = "pval", effect="fx"))
+as_flextable.crosstable = function(x, keep_id=FALSE,
+                                   ..., by_header=NULL,
+                                   autofit=TRUE, compact=FALSE, collapse=NULL,
+                                   show_test_name=TRUE, allow_breaks=FALSE,
                                    fontsizes=list(body=11, subheaders=11, header=11),
                                    padding_v=NULL, remove_header_keys=TRUE,
                                    header_show_n=FALSE, header_show_n_pattern="{.col} (N={.n})",
                                    generic_labels=list(id=".id", variable="variable", value="value",
                                                        total="Total", label="label", test="test",
-                                                       effect="effect"),
-                                   ...) {
+                                                       effect="effect")) {
+  check_dots_empty()
   assert_class(x, "crosstable", .var.name=vname(x))
   if(any(dim(x)==0)){
     cli_abort("{.fun as_flextable} cannot apply to an empty crosstable.",
@@ -75,6 +85,7 @@ as_flextable.crosstable = function(x, keep_id=FALSE, by_header=NULL,
   if(missing(by_header)) by_header = getOption("crosstable_by_header", by_header)
   if(missing(autofit)) autofit = getOption("crosstable_autofit", autofit)
   if(missing(compact)) compact = getOption("crosstable_compact", compact)
+  if(missing(collapse)) collapse = getOption("crosstable_collapse", collapse)
   if(missing(show_test_name)) show_test_name = getOption("crosstable_show_test_name", show_test_name)
   if(missing(padding_v)) padding_v = getOption("crosstable_padding_v", padding_v)
   if(missing(remove_header_keys)) remove_header_keys = getOption("crosstable_remove_header_keys",
@@ -93,26 +104,26 @@ as_flextable.crosstable = function(x, keep_id=FALSE, by_header=NULL,
   border1 = fp_border(color = "black", style = "solid", width = 1)
   border2 = fp_border(color = "black", style = "solid", width = 1.5)
 
-  xattr = attributes(x)
+  ct_attr = attributes(x)
   has_test = attr(x, "has_test")
   has_effect = attr(x, "has_effect")
   has_total = attr(x, "has_total")
   has_label = attr(x, "has_label")
   by_label = attr(x, "by_label")
   by_table = attr(x, "by_table")
+  by = attr(x, "by")
   showNA = attr(x, "showNA")
+  inner_labels = attr(x, "inner_labels")
   by_levels = attr(x, "by_levels") %>% map(~{
     if(showNA=="always") .x=unique(c(.x, NA))
     replace_na(.x, replace="NA")
   })
   n_levels = length(by_levels)
-  by = attr(x, "by")
   has_by =  !is.null(by)
   if(has_by && is.null(by_label)) by_label=by
   if(isTRUE(by_header)) by_header=NULL
   if(!is.null(by_header) && all(is.na(by_header) | by_header=="", na.rm=TRUE)) by_header=FALSE
 
-  inner_labels = attr(x, "inner_labels")
   if(!is.null(inner_labels)){
     generic_labels = modifyList(generic_labels, inner_labels)
   }
@@ -125,39 +136,34 @@ as_flextable.crosstable = function(x, keep_id=FALSE, by_header=NULL,
     x[[test]] = str_remove(x[[test]], "\\n\\(.*\\)")
   }
   if (compact && !inherits(x, "compacted_crosstable")) {
-    x = ct_compact.crosstable(x, keep_id=keep_id)
+    name_from = if(is.null(inner_labels)) "label" else inner_labels$label
+    x = ct_compact.crosstable(x, label_with_id=keep_id, name_from=name_from, collapse=collapse)
   }
 
-  rtn = replace(x, is.na(x), "NA")
-
   if(inherits(x, "compacted_crosstable")) {
-    rows = attr(x, "title_rows")
-    title_rows = which(rows)+(0:(sum(rows)-1))
-    padded_rows = 1:nrow(rtn)
-    padded_rows = padded_rows[!padded_rows %in% title_rows]
-    header_labels = names(rtn) %>% recode(!!generic_labels$variable:="")
     hl = set_names("", generic_labels$variable)
-    rtn = rtn %>%
-      flextable() %>%
+    cols = names(x) %>% setdiff(id)
+    title_rows = which(x$.id!=lag(x$.id, default=""))
+    padded_rows = which(x$.id==lag(x$.id, default=""))
+    rtn = x %>%
+      flextable(col_keys=cols) %>%
       set_header_labels(values=hl) %>%
       fontsize(size=fontsizes$body) %>%
-      fontsize(i=title_rows, size=fontsizes$subheaders) %>%
-      border(title_rows, border.top = fp_border()) %>%
-      bold(title_rows, j=1:2) %>%
-      align(title_rows, align="left") %>%
-      padding(i=padded_rows, j=1, padding.left=getOption("crosstable_compact_padding", 25))
+      fontsize(title_rows, size=fontsizes$subheaders) %>%
+      border(title_rows, border.top=border1) %>%
+      bold(title_rows, j=1) %>%
+      padding(padded_rows, j=1, padding.left=getOption("crosstable_compact_padding", 25))
   } else {
-    sep.rows = which(rtn[[id]] != lead(rtn[[id]]))
-    body_merge = intersect(names(rtn), generic_labels[c("label", "test", "effect", "id")]) %>%
-      unlist()
-    cols = names(rtn)
-
+    sep.rows = which(x[[id]] != lead(x[[id]]))
+    body_merge = names(x) %>%
+      intersect(unlist(generic_labels[c("label", "test", "effect", "id")]))
+    cols = names(x)
     if(!keep_id) {
-      cols = rtn %>% select(-any_of(id)) %>% names()
-      body_merge = body_merge[body_merge!=id]
+      cols = cols %>% setdiff(id)
+      body_merge = body_merge %>% setdiff(id)
     }
 
-    rtn = rtn %>%
+    rtn = x %>%
       mutate(
         !!id:=str_wrap2(.data[[id]], width = getOption("crosstable_wrap_id", 70))
       )  %>%
@@ -166,6 +172,7 @@ as_flextable.crosstable = function(x, keep_id=FALSE, by_header=NULL,
       hline(i=sep.rows, border=border1) %>%
       merge_v(j=id, target=body_merge, part="body")
   }
+
 
   if(n_levels==0) {
 
@@ -226,10 +233,9 @@ as_flextable.crosstable = function(x, keep_id=FALSE, by_header=NULL,
     }
     header_mapping = tibble(col_keys = names(x)) %>%
       separate_wider_delim(col_keys, names=paste0(".col_", seq(n_levels)),
-                                  delim=" & ", cols_remove=FALSE, too_few="align_start") %>%
+                           delim=" & ", cols_remove=FALSE, too_few="align_start") %>%
       mutate(across(starts_with(".col_"), ~ifelse(is.na(.x), col_keys, .x))) %>%
       select(col_keys, rev(everything()))
-
 
     if(!isFALSE(header_show_n)){
       if(isTRUE(header_show_n)) header_show_n = seq(n_levels)
@@ -265,8 +271,10 @@ as_flextable.crosstable = function(x, keep_id=FALSE, by_header=NULL,
         header_mapping %>%
         mutate(across(-col_keys, ~str_remove(.x, "^.*?="))) %>%
         mutate(across(-col_keys, ~{
-          i=as.numeric(str_sub(cur_column(), -1))
-          ifelse(col_keys %in% a, by_label[i], .x)
+          i = as.numeric(str_sub(cur_column(), -1))
+          lab = by_label[i]
+          lab = if(keep_id) glue("{lab} ({id})", id=names(lab)) else lab
+          ifelse(col_keys %in% a, lab, .x)
         }))
     }
 
@@ -282,6 +290,10 @@ as_flextable.crosstable = function(x, keep_id=FALSE, by_header=NULL,
       border(j=borders_j, border.left=border1, part="all") %>%
       vline_left(border=border1) %>%
       vline_right(border=border1)
+  }
+
+  if(isFALSE(allow_breaks)){
+    rtn = paginate(rtn, group=id)
   }
 
   merge_cols = names(rtn$header$dataset) %>% .[. %in% generic_labels]
